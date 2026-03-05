@@ -25,6 +25,11 @@ export const calendarApi = {
 export const aiApi = {
   generateContent: (prompt) => apiClient.post("/ai/generate", { prompt }),
   analyzeContent: (content) => apiClient.post("/ai/analyze", { content }),
+  applyDraft: (draft) => apiClient.post("/ai/apply", { draft }),
+  reviseDraft: (content) => apiClient.post("/ai/revise", { content }),
+  cancelDraft: (draft, reason) => apiClient.post("/ai/cancel", { draft, reason }),
+  getChatLogs: (limit = 30) => apiClient.get("/ai/chat-logs", { params: { limit } }),
+  getTodaySummary: () => apiClient.get("/ai/today-summary"),
 };
 
 // User API
