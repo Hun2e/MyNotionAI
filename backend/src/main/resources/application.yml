@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: mynotion-backend
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/mynotion?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  security:
+    jwt:
+      secret: ${JWT_SECRET:your-secret-key-change-this-in-production-your-secret-key-change}
+      expiration: 86400000
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+logging:
+  level:
+    root: INFO
+    com.mynotionai: DEBUG
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  model: gpt-4
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:}

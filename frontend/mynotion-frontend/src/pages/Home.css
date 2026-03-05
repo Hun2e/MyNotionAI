@@ -1,0 +1,99 @@
+.dashboard-page {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.hero-card {
+  border: 1px solid #dde6f3;
+  border-radius: 12px;
+  padding: 1rem;
+  background: linear-gradient(130deg, #edf3ff 0%, #fff8ef 100%);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #49618d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.hero-card h1 {
+  font-size: 1.4rem;
+  margin: 0.35rem 0 0.5rem;
+  color: #1f3f71;
+}
+
+.hero-summary {
+  margin: 0;
+  color: #56709a;
+}
+
+.hero-link {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: #1d4e93;
+  font-weight: 700;
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.metric-card {
+  border: 1px solid #dde6f3;
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  background: #fff;
+}
+
+.metric-card p {
+  margin: 0;
+  color: #607493;
+}
+
+.metric-card strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #213f72;
+  font-size: 1.6rem;
+}
+
+.today-card {
+  border: 1px solid #dde6f3;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.today-card h2 {
+  margin-top: 0;
+  color: #213f72;
+}
+
+.today-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.today-card li {
+  border: 1px solid #e4ebf7;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.today-card small {
+  color: #607493;
+}
+
+.empty-text {
+  color: #6b7d99;
+}

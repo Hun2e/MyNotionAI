@@ -1,0 +1,17 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+  color: #1e2c45;
+  background: #f4f7fb;
+}
