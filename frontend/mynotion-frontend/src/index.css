@@ -11,7 +11,17 @@ body,
 }
 
 body {
-  font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+  font-family: "Pretendard", "Noto Sans KR", "Segoe UI", sans-serif;
   color: #1e2c45;
   background: #f4f7fb;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
 }

@@ -5,9 +5,11 @@ import Calendar from "./pages/Calendar";
 import Login from "./pages/Login";
 import AppLayout from "./layout/AppLayout";
 
+const bypassAuth = import.meta.env.VITE_BYPASS_AUTH === "true";
+
 function ProtectedRoute({ element }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return isAuthenticated ? element : <Navigate to="/login" />;
+  return isAuthenticated || bypassAuth ? element : <Navigate to="/login" />;
 }
 
 function App() {

@@ -1,99 +1,188 @@
-.dashboard-page {
+.home-page {
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
 }
 
-.hero-card {
-  border: 1px solid #dde6f3;
-  border-radius: 12px;
-  padding: 1rem;
-  background: linear-gradient(130deg, #edf3ff 0%, #fff8ef 100%);
+.section-kicker {
+  margin: 0 0 0.35rem;
+  color: #a35a28;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-.eyebrow {
+.home-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.2rem;
+  padding: 1.4rem;
+  border: 1px solid #dfdfd6;
+  border-radius: 1.4rem;
+  background:
+    linear-gradient(140deg, rgba(255, 244, 231, 0.92), rgba(239, 245, 252, 0.95)),
+    #fff;
+}
+
+.home-hero h1 {
   margin: 0;
-  color: #49618d;
-  font-size: 0.85rem;
+  color: #132742;
+  line-height: 1.08;
+  font-size: clamp(1.9rem, 3vw, 3rem);
+}
+
+.home-summary {
+  margin: 0.8rem 0 0;
+  max-width: 60ch;
+  color: #536882;
+  line-height: 1.65;
+}
+
+.hero-actions {
+  display: grid;
+  gap: 0.7rem;
+  justify-items: end;
+}
+
+.primary-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.85rem 1.2rem;
+  border-radius: 999px;
+  background: #173d74;
+  color: #fff;
+  text-decoration: none;
   font-weight: 700;
 }
 
-.hero-card h1 {
-  font-size: 1.4rem;
-  margin: 0.35rem 0 0.5rem;
-  color: #1f3f71;
+.status-pill {
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #5f6e83;
+  font-size: 0.88rem;
 }
 
-.hero-summary {
-  margin: 0;
-  color: #56709a;
-}
-
-.hero-link {
-  display: inline-block;
-  margin-top: 0.8rem;
-  color: #1d4e93;
-  font-weight: 700;
-}
-
-.cards-grid {
+.home-metrics {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.9rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
 }
 
 .metric-card {
-  border: 1px solid #dde6f3;
-  border-radius: 12px;
-  padding: 0.9rem 1rem;
+  padding: 1.1rem;
+  border: 1px solid #e2e6ec;
+  border-radius: 1.2rem;
   background: #fff;
 }
 
-.metric-card p {
+.metric-card.accent {
+  background: linear-gradient(160deg, #173d74, #315f98);
+}
+
+.metric-card p,
+.metric-card small {
   margin: 0;
-  color: #607493;
+  color: #62758f;
 }
 
 .metric-card strong {
   display: block;
-  margin-top: 0.25rem;
-  color: #213f72;
-  font-size: 1.6rem;
+  margin: 0.35rem 0;
+  color: #142843;
+  font-size: 1.9rem;
 }
 
-.today-card {
-  border: 1px solid #dde6f3;
-  border-radius: 12px;
-  padding: 1rem;
+.metric-card.accent p,
+.metric-card.accent small,
+.metric-card.accent strong {
+  color: #fff;
+}
+
+.home-grid {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 1rem;
+}
+
+.panel-card {
+  border: 1px solid #e2e6ec;
+  border-radius: 1.2rem;
+  padding: 1.1rem;
   background: #fff;
 }
 
-.today-card h2 {
-  margin-top: 0;
-  color: #213f72;
+.panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.8rem;
 }
 
-.today-card ul {
+.panel-head h2 {
+  margin: 0;
+  color: #162a45;
+}
+
+.panel-head span {
+  color: #6a7a90;
+  font-size: 0.88rem;
+}
+
+.agenda-list,
+.upcoming-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 0.55rem;
+  gap: 0.75rem;
 }
 
-.today-card li {
-  border: 1px solid #e4ebf7;
-  border-radius: 10px;
-  padding: 0.6rem 0.75rem;
+.agenda-list li,
+.upcoming-list li {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   gap: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  background: #f8fafc;
 }
 
-.today-card small {
-  color: #607493;
+.agenda-list strong,
+.upcoming-list strong {
+  color: #182d4a;
 }
 
+.agenda-list p {
+  margin: 0.35rem 0 0;
+  color: #6a7a90;
+  line-height: 1.5;
+}
+
+.agenda-list span,
+.upcoming-list span,
 .empty-text {
-  color: #6b7d99;
+  color: #66768d;
+}
+
+@media (max-width: 900px) {
+  .home-hero,
+  .panel-head,
+  .agenda-list li,
+  .upcoming-list li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-actions {
+    justify-items: start;
+  }
+
+  .home-metrics,
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
 }
