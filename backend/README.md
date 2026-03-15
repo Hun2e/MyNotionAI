@@ -1,160 +1,123 @@
-# MyNotion AI Backend
+# MyNotionAI Backend
 
-Spring Boot 기반 백엔드 서버입니다.
+MyNotionAI의 백엔드 서버입니다. 인증, 일정 관리, 사용자 프로필, AI 기반 일정 보조 기능을 담당합니다.
 
 ## 기술 스택
 
-- **Framework**: Spring Boot 3.2.0
-- **Build Tool**: Gradle
-- **Database**: MySQL
-- **ORM**: JPA/Hibernate
-- **Security**: Spring Security + JWT
-- **AI**: OpenAI GPT API
-- **Java Version**: 17+
+- Java 17
+- Spring Boot 3.2.0
+- Spring Security
+- Spring Data JPA
+- Maven
+- MySQL, H2
 
-## 프로젝트 구조
+## 주요 API
 
-```
-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/mynotionai/
-│   │   │   ├── controller/     # REST API Controllers
-│   │   │   ├── service/        # Business Logic
-│   │   │   ├── repository/     # Data Access
-│   │   │   ├── entity/         # JPA Entities
-│   │   │   ├── dto/            # Data Transfer Objects
-│   │   │   ├── config/         # Spring Configurations
-│   │   │   ├── security/       # Security Configurations
-│   │   │   ├── exception/      # Custom Exceptions
-│   │   │   └── util/           # Utility Classes
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       └── application-dev.yml
-│   └── test/
-└── build.gradle
-```
-
-## 환경 설정
-
-### required 환경변수
-
-```bash
-export OPENAI_API_KEY=your-api-key
-export JWT_SECRET=your-secret-key
-export DB_PASSWORD=your-db-password
-```
-
-또는 `.env` 파일 생성:
-
-```
-OPENAI_API_KEY=your-api-key
-JWT_SECRET=your-secret-key-minimum-32-chars
-DB_PASSWORD=your-password
-```
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/google`
+- `GET /api/calendar/events`
+- `POST /api/calendar/events`
+- `PUT /api/calendar/events/{id}`
+- `DELETE /api/calendar/events/{id}`
+- `GET /api/user/profile`
+- `PUT /api/user/profile`
+- `POST /api/ai/analyze`
+- `POST /api/ai/apply`
+- `POST /api/ai/revise`
+- `POST /api/ai/cancel`
+- `GET /api/ai/chat-logs`
+- `GET /api/ai/today-summary`
 
 ## 실행 방법
 
-### Gradle 설치 (Windows에서)
+### 사전 요구사항
+
+- Java 17 이상
+- Maven 3.9 이상
+
+### 환경 변수
 
 ```powershell
-choco install gradle
+$env:DB_PASSWORD="your-db-password"
+$env:JWT_SECRET="your-jwt-secret"
+$env:OPENAI_API_KEY="your-openai-api-key"
+$env:GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
 ```
 
-### 프로젝트 빌드
+### MySQL 기준 실행
 
-```bash
-gradle build
+```powershell
+cd backend
+mvn spring-boot:run
 ```
 
-### 개발 서버 실행
+기본 설정은 `src/main/resources/application.yml`에 있습니다.
 
-```bash
-gradle bootRun
+### 로컬 H2 기준 실행
+
+```powershell
+backend\run-backend-h2.cmd
 ```
 
-또는 H2 인메모리 DB 사용:
+이 스크립트는 `.tools/apache-maven-3.9.9/bin/mvn.cmd`를 사용하며, 실행 로그는 `backend/spring-boot.log`에 기록됩니다.
 
-```bash
-gradle bootRun --args='--spring.profiles.active=dev'
+### 빌드
+
+```powershell
+cd backend
+mvn clean package
 ```
 
-### JAR 파일 생성 및 실행
+생성 산출물:
 
-```bash
-gradle build
-java -jar build/libs/mynotion-backend-0.0.1-SNAPSHOT.jar
+- `target/mynotion-backend-0.0.1-SNAPSHOT.jar`
+
+### 테스트
+
+```powershell
+cd backend
+mvn test
 ```
 
-## API 서버
+## 프로젝트 구조
 
-- **Base URL**: `http://localhost:8080/api`
-- **Health Check**: `GET http://localhost:8080/api/health`
-
-## 주요 모듈
-
-### 1. 인증 (Authentication)
-
-- JWT 기반 토큰 인증
-- 사용자 회원가입 및 로그인
-
-### 2. 캘린더 (Calendar)
-
-- 일정 생성, 수정, 삭제
-- 일정 조회
-
-### 3. AI 기능
-
-- OpenAI GPT API 연동
-- 콘텐츠 생성 및 분석
-
-## 개발 가이드
-
-### 새로운 엔티티 추가
-
-1. `src/main/java/com/mynotionai/entity/` 에서 엔티티 클래스 생성
-2. `src/main/java/com/mynotionai/repository/` 에서 Repository 인터페이스 생성
-3. `src/main/java/com/mynotionai/service/` 에서 Service 클래스 생성
-4. `src/main/java/com/mynotionai/controller/` 에서 Controller 클래스 생성
-
-### 새로운 API 엔드포인트 추가
-
-```java
-@PostMapping("/your-endpoint")
-public ResponseEntity<?> yourMethod(@RequestBody YourRequest request) {
-    // your logic
-    return ResponseEntity.ok(new ApiResponse<>(data, "Success"));
-}
+```text
+backend
+|-- pom.xml
+|-- run-backend-h2.cmd
+|-- src/main/java/com/mynotionai
+|   |-- config
+|   |-- controller
+|   |-- dto
+|   |-- entity
+|   |-- repository
+|   |-- security
+|   `-- service
+`-- src/main/resources
+    |-- application.yml
+    `-- application-dev.yml
 ```
 
-## 테스트
+## 트러블슈팅
 
-```bash
-gradle test
-```
+### `mvn` 명령을 찾을 수 없는 경우
 
-## 배포
+- Maven이 설치되어 있는지 확인합니다.
+- 또는 `backend\run-backend-h2.cmd`를 사용해 실행합니다.
 
-```bash
-gradle build
-# build/libs/mynotion-backend-0.0.1-SNAPSHOT.jar 파일 배포
-```
+### 데이터베이스 연결 오류가 발생하는 경우
 
-## 문제 해결
+- 기본 datasource는 `jdbc:mysql://localhost:3306/mynotion`입니다.
+- 로컬 MySQL 상태와 `DB_PASSWORD` 값을 확인합니다.
+- 빠르게 로컬 확인이 필요하면 H2 실행 스크립트를 사용합니다.
 
-### Gradle 캐시 문제
+### 인증이 필요한 API에서 401이 발생하는 경우
 
-```bash
-gradle clean build
-```
+- `/auth/**`를 제외한 API는 JWT 인증이 필요합니다.
+- 프론트엔드 요청에 `Authorization: Bearer <token>` 헤더가 포함되는지 확인합니다.
 
-### 의존성 문제
+### 프론트엔드에서 CORS 오류가 발생하는 경우
 
-```bash
-gradle dependencies
-```
-
-## 참고
-
-- [Spring Boot Documentation](https://spring.io/projects/spring-boot)
-- [OpenAI API Documentation](https://platform.openai.com/docs)
+- 현재 허용 origin은 `localhost:5173`, `127.0.0.1:5173`, `localhost:3000`, `127.0.0.1:3000`입니다.
+- 다른 포트를 사용한다면 `SecurityConfig`를 수정해야 합니다.
