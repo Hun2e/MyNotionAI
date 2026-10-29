@@ -1,6 +1,6 @@
 # 프로필 분리 + Flyway 도입
 - 브랜치: feature/profile-flyway
-- 상태: 리뷰중 (Codex 구현, Claude 검증: mvn test 48개 통과, local·prod 기동 확인)
+- 상태: 완료 (Codex 구현·리뷰, Claude 검증: mvn test 48개 통과, local·prod(H2) 기동, 실제 MySQL 8.0 빈 DB에서 prod 기동 확인)
 
 ## 배경 (왜 하는가)
 1. **설정이 한 파일에 섞여 있다.** `application.yml` 하나에 MySQL 접속 정보, `show-sql: true`, 개발용 JWT 기본값이 함께 있다. 그래서 로컬과 운영의 설정을 구분할 수 없고, 운영에서 `JWT_SECRET`을 빠뜨려도 기본값으로 앱이 그냥 켜진다.
