@@ -124,7 +124,7 @@ backend\run-backend-h2.cmd
 ### 2. 프론트엔드 실행
 
 ```powershell
-cd frontend\mynotion-frontend
+cd frontend
 Copy-Item .env.example .env
 npm install
 npm run dev -- --host 127.0.0.1 --port 5173
