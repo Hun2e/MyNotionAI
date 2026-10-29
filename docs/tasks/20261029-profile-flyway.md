@@ -72,3 +72,7 @@
   - 수정 허용 파일에 `ChatLog.java`, `AiAction.java`를 추가한다. 인덱스 이름 외의 엔티티 변경은 하지 않는다.
   - 기존 MySQL DB(`ddl-auto: update`로 생성)에는 인덱스가 `idx_user_created`로 남아 있다. baseline으로 V1 적용 상태로 인정하므로 동작에는 문제가 없고, 이름 차이는 알려진 차이로 둔다.
   - 샌드박스 검증 제한: `mvn test`와 기동 확인은 Claude가 로컬에서 수행한다.
+- (PM 답변 2) 코드 리뷰 🔴 1(`docs/reviews/20261029-profile-flyway.md`) 처리: **A안(VARCHAR 통일)** 으로 결정. 사용자 승인 완료. — Claude
+  - `ChatLog.role`, `AiAction.actionType`, `AiAction.status`에 `@JdbcTypeCode(SqlTypes.VARCHAR)`를 추가한다. V1 SQL은 바꾸지 않는다.
+  - 수정 허용 파일: `ChatLog.java`, `AiAction.java`. 다른 엔티티 변경은 하지 않는다.
+  - 실제 MySQL 기동 검증은 Claude가 수행한다.
