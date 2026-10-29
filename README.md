@@ -30,7 +30,7 @@ MyNotionAI는 AI 기반 일정 관리 경험을 제공하는 프로젝트입니�
 
 - 프론트엔드: React 19, Vite 7, React Router 7, Axios, TanStack Query, Zustand
 - 백엔드: Java 17, Spring Boot 3.2, Spring Security, Spring Data JPA, JWT
-- 데이터베이스: MySQL 기본 사용, 로컬 개발용 H2 지원
+- 데이터베이스: MySQL(운영, `prod`), H2(로컬 개발 기본값 `local`·테스트), Flyway 마이그레이션
 - 빌드 도구: Maven, npm
 
 ## 화면 흐름
@@ -83,7 +83,7 @@ flowchart LR
 
 - 프론트엔드는 React와 Vite 기반으로 동작하며, Axios를 통해 백엔드 API를 호출합니다.
 - 백엔드는 Spring Security와 JWT로 인증을 처리하고, 인증 이후 일정·사용자·AI 관련 API를 제공합니다.
-- 데이터는 기본적으로 MySQL에 저장되며, 로컬 개발 환경에서는 H2 기반 실행도 가능합니다.
+- 운영 데이터는 MySQL에 저장하고, 로컬 개발은 기본 프로필(`local`)의 H2 파일 DB를 사용합니다. 스키마는 Flyway가 관리합니다.
 - AI 관련 기능은 백엔드에서 OpenAI API를 호출해 일정 분석, 수정, 요약 흐름을 처리합니다.
 
 ## 실행 방법
@@ -95,27 +95,41 @@ flowchart LR
 - Java 17 이상
 - Maven 3.9 이상 또는 `backend/run-backend-h2.cmd`에서 사용하는 내장 Maven
 
-기본 실행은 MySQL 기준입니다. 필요한 환경 변수:
+실행 환경은 Spring 프로필로 나뉩니다.
 
-```powershell
-$env:DB_PASSWORD="your-db-password"
-$env:JWT_SECRET="your-jwt-secret"
-$env:OPENAI_API_KEY="your-openai-api-key"
-$env:GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
-```
+| 프로필 | DB | 용도 |
+|---|---|---|
+| `local` (기본값) | H2 파일 DB (`backend/data/`) | 로컬 개발. 환경 변수 없이 실행 가능 |
+| `prod` | MySQL | 운영. `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET` 필수 (없으면 시작 실패) |
+| `test` | H2 인메모리 | `mvn test` 전용 |
 
-MySQL 기준 실행:
+로컬 실행 (`local` 프로필):
 
-```powershell
+```bash
 cd backend
 mvn spring-boot:run
 ```
 
-로컬 H2 기반 실행:
+Windows에서는 `backend\run-backend-h2.cmd`로도 실행할 수 있습니다.
+
+MySQL 실행 (`prod` 프로필):
 
 ```powershell
-backend\run-backend-h2.cmd
+$env:SPRING_PROFILES_ACTIVE="prod"
+$env:DB_USERNAME="your-db-user"
+$env:DB_PASSWORD="your-db-password"
+$env:JWT_SECRET="32자 이상의 비밀 키"
+$env:OPENAI_API_KEY="your-openai-api-key"
+$env:GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
+cd backend
+mvn spring-boot:run
 ```
+
+DB 스키마는 Flyway가 관리합니다.
+
+- 테이블 변경은 `backend/src/main/resources/db/migration/`에 `V2__설명.sql`처럼 새 버전 파일을 추가합니다. 이미 적용된 파일은 수정하지 않습니다.
+- Hibernate는 테이블을 만들거나 바꾸지 않고 `ddl-auto: validate`로 엔티티와 일치하는지만 검사합니다.
+- 기존 MySQL DB(예전 `ddl-auto: update`로 만든 DB)는 `prod`의 `baseline-on-migrate` 설정으로 V1이 적용된 상태로 인정됩니다.
 
 백엔드 기본 주소:
 
@@ -153,8 +167,14 @@ VITE_GOOGLE_CLIENT_ID=
 ### MySQL 연결이 실패하는 경우
 
 - MySQL이 실행 중인지, `mynotion` 데이터베이스가 존재하는지 확인합니다.
-- `DB_PASSWORD` 값과 `backend/src/main/resources/application.yml` 설정을 확인합니다.
-- 로컬 확인이 우선이면 `backend\run-backend-h2.cmd`로 H2 기반 실행을 사용합니다.
+- `DB_USERNAME`, `DB_PASSWORD` 값과 `backend/src/main/resources/application-prod.yml` 설정을 확인합니다.
+- 로컬 확인이 우선이면 프로필 없이 `mvn spring-boot:run`으로 H2(`local`) 실행을 사용합니다.
+
+### 로컬 실행 시 Flyway가 "non-empty schema" 오류로 시작을 거부하는 경우
+
+- Flyway 도입 전에 `run-backend-h2.cmd`로 만든 H2 파일 DB(`backend/data/`)에는 Flyway 이력이 없어서 생기는 오류입니다.
+- 필요한 데이터가 있다면 `backend/data/` 폴더를 먼저 백업합니다.
+- `backend/data/` 폴더를 삭제한 뒤 다시 실행하면 Flyway가 V1부터 새로 테이블을 만듭니다.
 
 ### JWT 또는 Google 로그인이 동작하지 않는 경우
 
