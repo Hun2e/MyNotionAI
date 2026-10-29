@@ -6,7 +6,7 @@
     },
     {
       "name": "Frontend (React)",
-      "path": "frontend/mynotion-frontend",
+      "path": "frontend",
     },
     {
       "name": "Docs",
