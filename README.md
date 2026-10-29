@@ -70,6 +70,10 @@
 
 ## 시스템 아키텍처
 
+![시스템 아키텍처](docs/architecture.png)
+
+### 요청 흐름
+
 ```mermaid
 flowchart LR
     User(["사용자 브라우저"])
