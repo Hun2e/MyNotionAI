@@ -7,14 +7,14 @@ import com.mynotionai.dto.UserProfileUpdateRequest;
 import com.mynotionai.dto.UserRegisterRequest;
 import com.mynotionai.dto.UserResponse;
 import com.mynotionai.entity.User;
+import com.mynotionai.exception.BusinessException;
+import com.mynotionai.exception.ErrorCode;
 import com.mynotionai.repository.UserRepository;
 import com.mynotionai.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 @Service
 @RequiredArgsConstructor
@@ -28,7 +28,7 @@ public class AuthService {
     @Transactional
     public AuthResponse register(UserRegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already exists");
+            throw new BusinessException(ErrorCode.EMAIL_ALREADY_EXISTS);
         }
 
         User user = User.builder()
@@ -50,10 +50,10 @@ public class AuthService {
     @Transactional(readOnly = true)
     public AuthResponse login(UserLoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials"));
+            .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         String token = jwtTokenProvider.generateToken(user.getId());
@@ -83,14 +83,14 @@ public class AuthService {
     @Transactional(readOnly = true)
     public UserResponse getUserById(Long userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         return UserResponse.from(user);
     }
 
     @Transactional
     public UserResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         user.setNickname(request.getNickname());
         return UserResponse.from(userRepository.save(user));
     }
@@ -99,10 +99,7 @@ public class AuthService {
         User existingByEmail = userRepository.findByEmail(googleUser.email()).orElse(null);
         if (existingByEmail != null) {
             if (existingByEmail.getProvider() != User.Provider.GOOGLE) {
-                throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "This email is already registered with a local account"
-                );
+                throw new BusinessException(ErrorCode.EMAIL_REGISTERED_AS_LOCAL);
             }
             return existingByEmail;
         }

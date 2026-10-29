@@ -4,13 +4,13 @@ import com.mynotionai.dto.ScheduleRequest;
 import com.mynotionai.dto.ScheduleResponse;
 import com.mynotionai.entity.Schedule;
 import com.mynotionai.entity.User;
+import com.mynotionai.exception.BusinessException;
+import com.mynotionai.exception.ErrorCode;
 import com.mynotionai.repository.ScheduleRepository;
 import com.mynotionai.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -26,7 +26,7 @@ public class ScheduleService {
     @Transactional(readOnly = true)
     public List<ScheduleResponse> getMonthlySchedules(Long userId, int year, int month) {
         if (month < 1 || month > 12) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "month must be between 1 and 12");
+            throw new BusinessException(ErrorCode.INVALID_MONTH);
         }
 
         YearMonth yearMonth = YearMonth.of(year, month);
@@ -77,17 +77,17 @@ public class ScheduleService {
 
     private User getUser(Long userId) {
         return userRepository.findById(userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+            .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
     }
 
     private Schedule getUserSchedule(Long userId, Long scheduleId) {
         return scheduleRepository.findByIdAndUserId(scheduleId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Schedule not found"));
+            .orElseThrow(() -> new BusinessException(ErrorCode.SCHEDULE_NOT_FOUND));
     }
 
     private void validateTimeRange(ScheduleRequest request) {
         if (!request.getStartAt().isBefore(request.getEndAt())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "startAt must be before endAt");
+            throw new BusinessException(ErrorCode.INVALID_TIME_RANGE);
         }
     }
 }
