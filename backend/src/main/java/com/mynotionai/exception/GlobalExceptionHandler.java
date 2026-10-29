@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -17,7 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 모든 예외를 {code, message, timestamp} 공통 포맷으로 변환한다.
+ * Spring MVC 예외 처리 경로의 예외를 {code, message, timestamp} 공통 포맷으로 변환한다.
  * ResponseEntityExceptionHandler를 상속해 Spring MVC 기본 예외(잘못된 JSON, 파라미터 누락,
  * ResponseStatusException 등)도 원래 상태 코드를 유지한 채 같은 포맷으로 응답한다.
  */
@@ -62,11 +64,30 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(
         Exception ex, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request
     ) {
-        String code = HttpStatus.valueOf(statusCode.value()).name();
-        String message = (ex instanceof ErrorResponse springError)
-            ? springError.getBody().getDetail()
-            : ex.getMessage();
+        HttpStatus status = HttpStatus.resolve(statusCode.value());
+        String code = status != null ? status.name() : "HTTP_" + statusCode.value();
+        String message;
+        if (statusCode.is5xxServerError()) {
+            log.error("Spring MVC 요청 처리 중 서버 오류 발생", ex);
+            message = ErrorCode.INTERNAL_ERROR.getMessage();
+        } else {
+            String fallbackMessage = status != null ? status.getReasonPhrase() : code;
+            message = resolveClientMessage(ex, body, fallbackMessage);
+        }
         return ResponseEntity.status(statusCode).headers(headers)
             .body(ApiErrorResponse.of(code, message));
+    }
+
+    private String resolveClientMessage(Exception ex, Object body, String fallbackMessage) {
+        if (ex instanceof HttpMessageNotReadableException) {
+            return ErrorCode.INVALID_INPUT.getMessage();
+        }
+        if (body instanceof ProblemDetail problem && problem.getDetail() != null) {
+            return problem.getDetail();
+        }
+        if (ex instanceof ErrorResponse springError && springError.getBody().getDetail() != null) {
+            return springError.getBody().getDetail();
+        }
+        return fallbackMessage;
     }
 }
