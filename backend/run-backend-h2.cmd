@@ -1,8 +1,7 @@
 @echo off
 setlocal
 
-set "ROOT_DIR=%~dp0.."
-set "MVN_CMD=%ROOT_DIR%\.tools\apache-maven-3.9.9\bin\mvn.cmd"
+set "MVN_CMD=%~dp0mvnw.cmd"
 set "LOG_FILE=%~dp0spring-boot.log"
 
 if exist "%LOG_FILE%" del /f /q "%LOG_FILE%"

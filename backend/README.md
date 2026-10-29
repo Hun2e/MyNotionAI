@@ -49,7 +49,7 @@ $env:GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
 
 ```powershell
 cd backend
-mvn spring-boot:run
+.\mvnw spring-boot:run
 ```
 
 기본 설정은 `src/main/resources/application.yml`에 있습니다.
@@ -60,13 +60,13 @@ mvn spring-boot:run
 backend\run-backend-h2.cmd
 ```
 
-이 스크립트는 `.tools/apache-maven-3.9.9/bin/mvn.cmd`를 사용하며, 실행 로그는 `backend/spring-boot.log`에 기록됩니다.
+이 스크립트는 Maven Wrapper(`backend/mvnw.cmd`)를 사용하며, 실행 로그는 `backend/spring-boot.log`에 기록됩니다.
 
 ### 빌드
 
 ```powershell
 cd backend
-mvn clean package
+.\mvnw clean package
 ```
 
 생성 산출물:
@@ -77,7 +77,7 @@ mvn clean package
 
 ```powershell
 cd backend
-mvn test
+.\mvnw test
 ```
 
 ## 프로젝트 구조

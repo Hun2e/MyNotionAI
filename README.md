@@ -262,7 +262,7 @@ Base URL: `http://localhost:8080/api` · `/auth/**` 외에는 `Authorization: Be
 
 ```bash
 cd backend
-JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test   # 48개 통과
+JAVA_HOME=$(/usr/libexec/java_home -v 17) ./mvnw test   # 48개 통과
 ```
 
 | 테스트 클래스 | 종류 | 개수 | 검증 내용 |
@@ -319,7 +319,7 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 
 ### 요구 사항
 
-- JDK 17, Maven 3.9+
+- JDK 17 (Maven은 `backend/mvnw` Wrapper가 자동으로 받습니다)
 - Node.js 18+, npm 9+
 - Docker Desktop (Docker Compose로 실행할 때만)
 
@@ -327,7 +327,7 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 
 ```bash
 cd backend
-JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn spring-boot:run
+JAVA_HOME=$(/usr/libexec/java_home -v 17) ./mvnw spring-boot:run
 # http://localhost:8080/api
 ```
 
@@ -342,7 +342,7 @@ export DB_USERNAME="your-db-user"
 export DB_PASSWORD="your-db-password"
 export JWT_SECRET="32자 이상의 비밀 키"
 export GOOGLE_OAUTH_CLIENT_ID="your-google-client-id"
-cd backend && mvn spring-boot:run
+cd backend && ./mvnw spring-boot:run
 ```
 
 - `mynotion` 데이터베이스가 있어야 합니다. 빈 DB면 Flyway가 V1부터 테이블을 만듭니다.
