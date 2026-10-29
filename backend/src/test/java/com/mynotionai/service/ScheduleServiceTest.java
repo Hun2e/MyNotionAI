@@ -223,12 +223,13 @@ class ScheduleServiceTest {
     }
 
     @Nested
-    @DisplayName("월별 조회 경계")
+    @DisplayName("월별 조회 인자와 mock 결과 변환")
     class MonthlyQueryBoundary {
 
         @Test
-        @DisplayName("조회 구간은 해당 월 1일 0시부터 다음 달 1일 0시 직전까지다")
+        @DisplayName("해당 월과 다음 달 1일 0시로 조회하고 mock이 반환한 일정을 변환한다")
         void queriesExactMonthRange() {
+            // 실제 쿼리의 경계 포함 여부가 아니라 조회 인자와 mock 결과 변환을 검증한다.
             given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
                 OWNER_ID,
                 LocalDateTime.of(2026, 9, 1, 0, 0),
@@ -242,9 +243,9 @@ class ScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("2월은 윤년 여부와 무관하게 다음 달 1일을 경계로 삼는다")
+        @DisplayName("평년 2월은 3월 1일 0시로 조회하고 mock의 빈 결과를 반환한다")
         void handlesFebruaryBoundary() {
-            // 2026년은 평년(2월 28일까지)
+            // 평년의 조회 인자를 검증하며 윤년이나 실제 DB의 날짜 필터링은 검증하지 않는다.
             given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
                 OWNER_ID,
                 LocalDateTime.of(2026, 2, 1, 0, 0),
@@ -258,7 +259,7 @@ class ScheduleServiceTest {
         }
 
         @Test
-        @DisplayName("12월 조회는 다음 해 1월을 경계로 삼는다")
+        @DisplayName("12월은 다음 해 1월 1일 0시로 조회하고 mock의 빈 결과를 반환한다")
         void handlesYearBoundary() {
             given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
                 OWNER_ID,

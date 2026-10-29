@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -112,6 +113,11 @@ class AuthServiceTest {
             assertThat(response.getAccessToken()).isEqualTo(TOKEN);
             // 평문 비밀번호가 인코더를 거쳤는지 확인
             verify(passwordEncoder).encode(RAW_PASSWORD);
+            ArgumentCaptor<User> savedUser = ArgumentCaptor.forClass(User.class);
+            verify(userRepository).save(savedUser.capture());
+            assertThat(savedUser.getValue().getPasswordHash())
+                .isEqualTo(HASHED_PASSWORD)
+                .isNotEqualTo(RAW_PASSWORD);
         }
     }
 
