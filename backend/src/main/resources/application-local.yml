@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/mynotion;MODE=MySQL;AUTO_SERVER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    show-sql: true
+
+  security:
+    jwt:
+      # 로컬 개발 전용 기본값이며 운영에서는 사용하지 않는다.
+      secret: ${JWT_SECRET:your-secret-key-change-this-in-production-your-secret-key-change}

@@ -2,11 +2,13 @@ package com.mynotionai.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "ai_actions", indexes = {
-    @Index(name = "idx_user_created", columnList = "user_id, created_at"),
+    @Index(name = "idx_ai_user_created", columnList = "user_id, created_at"),
     @Index(name = "idx_schedule", columnList = "target_schedule_id")
 })
 @Getter
@@ -26,6 +28,7 @@ public class AiAction {
     
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private ActionType actionType;
     
     @ManyToOne(fetch = FetchType.LAZY)
@@ -37,6 +40,7 @@ public class AiAction {
     
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private Status status;
     
     @Column(nullable = true)

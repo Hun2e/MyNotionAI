@@ -2,24 +2,19 @@ spring:
   application:
     name: mynotion-backend
 
+  profiles:
+    default: local
+
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
 
-  datasource:
-    url: jdbc:mysql://localhost:3306/mynotion?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: ${DB_PASSWORD:}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-
   security:
     jwt:
-      secret: ${JWT_SECRET:your-secret-key-change-this-in-production-your-secret-key-change}
       expiration: 86400000
 
 server:

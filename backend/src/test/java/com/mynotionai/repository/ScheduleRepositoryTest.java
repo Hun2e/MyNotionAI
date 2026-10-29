@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase.Replace;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -22,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 특히 사용자별 데이터 격리는 Mock으로는 검증할 수 없어 실제 DB가 필요하다.
  */
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = Replace.NONE)
 @ActiveProfiles("test")
 @DisplayName("ScheduleRepository 통합 테스트")
 class ScheduleRepositoryTest {
