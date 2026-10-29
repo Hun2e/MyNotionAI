@@ -26,6 +26,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("ScheduleRepository 통합 테스트")
 class ScheduleRepositoryTest {
 
+    private static final long SCHEDULE_DURATION_HOURS = 1;
+    private static final long BOUNDARY_OFFSET_SECONDS = 1;
+    private static final LocalDateTime MONTH_START = LocalDateTime.parse("2026-09-01T00:00:00");
+    private static final LocalDateTime NEXT_MONTH_START = LocalDateTime.parse("2026-10-01T00:00:00");
+    private static final LocalDateTime DAY_START = LocalDateTime.parse("2026-09-17T00:00:00");
+    private static final LocalDateTime NEXT_DAY_START = LocalDateTime.parse("2026-09-18T00:00:00");
+    private static final LocalDateTime SAMPLE_START = LocalDateTime.parse("2026-09-17T10:00:00");
+    private static final LocalDateTime MORNING_START = LocalDateTime.parse("2026-09-17T09:00:00");
+    private static final LocalDateTime NOON_START = LocalDateTime.parse("2026-09-17T12:00:00");
+    private static final LocalDateTime AFTERNOON_START = LocalDateTime.parse("2026-09-17T15:00:00");
+
     @Autowired
     private ScheduleRepository scheduleRepository;
 
@@ -57,7 +68,7 @@ class ScheduleRepositoryTest {
             .user(user)
             .title(title)
             .startAt(startAt)
-            .endAt(startAt.plusHours(1))
+            .endAt(startAt.plusHours(SCHEDULE_DURATION_HOURS))
             .createdBy(Schedule.CreatedBy.USER)
             .build());
     }
@@ -66,7 +77,7 @@ class ScheduleRepositoryTest {
     @DisplayName("findByIdAndUserId는 소유자가 아니면 빈 결과를 준다")
     void findByIdAndUserIdIsolatesUsers() {
         Schedule aliceSchedule = saveSchedule(alice, "앨리스 일정",
-            LocalDateTime.of(2026, 9, 17, 10, 0));
+            SAMPLE_START);
 
         Optional<Schedule> asOwner =
             scheduleRepository.findByIdAndUserId(aliceSchedule.getId(), alice.getId());
@@ -80,54 +91,68 @@ class ScheduleRepositoryTest {
     @Test
     @DisplayName("월별 조회는 다른 사용자의 일정을 포함하지 않는다")
     void monthlyQueryExcludesOtherUsers() {
-        LocalDateTime september = LocalDateTime.of(2026, 9, 17, 10, 0);
+        LocalDateTime september = SAMPLE_START;
         saveSchedule(alice, "앨리스 일정", september);
         saveSchedule(bob, "밥 일정", september);
 
         List<Schedule> aliceSchedules =
-            scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            scheduleRepository.findUserSchedulesInRange(
                 alice.getId(),
-                LocalDateTime.of(2026, 9, 1, 0, 0),
-                LocalDateTime.of(2026, 10, 1, 0, 0));
+                MONTH_START,
+                NEXT_MONTH_START);
 
         assertThat(aliceSchedules)
-            .hasSize(1)
             .extracting(Schedule::getTitle)
             .containsExactly("앨리스 일정");
     }
 
     @Test
-    @DisplayName("조회 구간 밖의 일정은 제외된다")
-    void excludesSchedulesOutsideRange() {
-        saveSchedule(alice, "8월 일정", LocalDateTime.of(2026, 8, 31, 23, 0));
-        saveSchedule(alice, "9월 일정", LocalDateTime.of(2026, 9, 1, 0, 0));
-        saveSchedule(alice, "10월 일정", LocalDateTime.of(2026, 10, 1, 0, 0));
+    @DisplayName("해당 월 1일 0시는 포함하고 다음 달 1일 0시는 제외한다")
+    void monthlyQueryIncludesStartAndExcludesEnd() {
+        saveSchedule(alice, "8월 일정", MONTH_START.minusSeconds(BOUNDARY_OFFSET_SECONDS));
+        saveSchedule(alice, "9월 일정", MONTH_START);
+        saveSchedule(alice, "9월 마지막 일정", NEXT_MONTH_START.minusSeconds(BOUNDARY_OFFSET_SECONDS));
+        saveSchedule(alice, "10월 일정", NEXT_MONTH_START);
 
         List<Schedule> result =
-            scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            scheduleRepository.findUserSchedulesInRange(
                 alice.getId(),
-                LocalDateTime.of(2026, 9, 1, 0, 0),
-                LocalDateTime.of(2026, 10, 1, 0, 0));
+                MONTH_START,
+                NEXT_MONTH_START);
 
-        // Between은 양끝을 포함하므로 10월 1일 0시 일정도 들어온다.
-        // 이 테스트는 그 경계 동작을 기록해 둔다.
         assertThat(result)
             .extracting(Schedule::getTitle)
-            .containsExactly("9월 일정", "10월 일정");
+            .containsExactly("9월 일정", "9월 마지막 일정");
+    }
+
+    @Test
+    @DisplayName("오늘 요약 조회는 오늘 0시를 포함하고 내일 0시를 제외한다")
+    void dailyQueryIncludesStartAndExcludesEnd() {
+        saveSchedule(alice, "어제 마지막 일정", DAY_START.minusSeconds(BOUNDARY_OFFSET_SECONDS));
+        saveSchedule(alice, "오늘 0시 일정", DAY_START);
+        saveSchedule(alice, "오늘 마지막 일정", NEXT_DAY_START.minusSeconds(BOUNDARY_OFFSET_SECONDS));
+        saveSchedule(alice, "내일 0시 일정", NEXT_DAY_START);
+
+        List<Schedule> result = scheduleRepository.findUserSchedulesInRange(
+            alice.getId(), DAY_START, NEXT_DAY_START);
+
+        assertThat(result)
+            .extracting(Schedule::getTitle)
+            .containsExactly("오늘 0시 일정", "오늘 마지막 일정");
     }
 
     @Test
     @DisplayName("월별 조회 결과는 시작 시간 오름차순으로 정렬된다")
     void ordersByStartAtAscending() {
-        saveSchedule(alice, "오후", LocalDateTime.of(2026, 9, 17, 15, 0));
-        saveSchedule(alice, "오전", LocalDateTime.of(2026, 9, 17, 9, 0));
-        saveSchedule(alice, "정오", LocalDateTime.of(2026, 9, 17, 12, 0));
+        saveSchedule(alice, "오후", AFTERNOON_START);
+        saveSchedule(alice, "오전", MORNING_START);
+        saveSchedule(alice, "정오", NOON_START);
 
         List<Schedule> result =
-            scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            scheduleRepository.findUserSchedulesInRange(
                 alice.getId(),
-                LocalDateTime.of(2026, 9, 1, 0, 0),
-                LocalDateTime.of(2026, 10, 1, 0, 0));
+                MONTH_START,
+                NEXT_MONTH_START);
 
         assertThat(result)
             .extracting(Schedule::getTitle)
@@ -138,7 +163,7 @@ class ScheduleRepositoryTest {
     @DisplayName("저장 시 createdAt·updatedAt이 자동으로 채워진다")
     void populatesTimestampsOnPersist() {
         Schedule saved = saveSchedule(alice, "일정",
-            LocalDateTime.of(2026, 9, 17, 10, 0));
+            SAMPLE_START);
 
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getUpdatedAt()).isNotNull();
