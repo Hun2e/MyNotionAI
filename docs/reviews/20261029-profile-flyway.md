@@ -50,3 +50,14 @@
 | 🔴 1 | 이번 PR에서 수정. A안(`@JdbcTypeCode(SqlTypes.VARCHAR)`) 적용 후 실제 빈 MySQL에서 `prod` 기동으로 검증 |
 | 🟡 2 | 이번 PR에서 README에 로컬 H2 전환 절차 기록 (Claude) |
 | 실제 MySQL 테스트 자동화 | 5단계(Docker·CI) 때 Testcontainers 도입 검토 |
+
+## 🔴 1 처리 결과 (Claude 검증)
+- A안 적용: `0cd2746 enum 컬럼을 VARCHAR로 매핑해 MySQL 스키마 검증 불일치 해결`
+- `mvn test` 48개 통과
+- 실제 MySQL 8.0.46 (Docker 일회용 컨테이너, 빈 DB)에서 `prod` 프로필 기동:
+  | 엔티티 | 결과 |
+  |---|---|
+  | 수정 전 (`0cd2746~1`) | `wrong column type encountered in column [action_type] in table [ai_actions]`로 기동 실패 → 리뷰 지적 재현 |
+  | 수정 후 | `Successfully applied 1 migration ... now at version v1` → 앱 정상 기동 |
+- 생성된 스키마: enum 컬럼 3개 `varchar(255)`, `provider`·`created_by` `varchar(20)`, 인덱스 6개 이름이 V1과 일치
+- 검증 후 컨테이너와 테스트용 비밀번호는 삭제했다.
