@@ -17,3 +17,5 @@ Thumbs.db
 # Env
 .env
 application-*.yml
+# 테스트 전용 설정(가짜 값만 포함)은 저장소에 포함
+!backend/src/test/resources/application-test.yml
