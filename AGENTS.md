@@ -118,15 +118,32 @@ MyNotionAI/
 ### 백엔드
 
 ```bash
+# 로컬 (기본 프로필 local, H2 파일 DB, 환경 변수 불필요)
 cd backend
-export DB_PASSWORD="..."
-export JWT_SECRET="..."          # 최소 32자
-export OPENAI_API_KEY="..."
-export GOOGLE_OAUTH_CLIENT_ID="..."
-mvn spring-boot:run              # http://localhost:8080/api
+JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn spring-boot:run   # http://localhost:8080/api
+
+# 운영 (prod, MySQL) - DB_USERNAME, DB_PASSWORD, JWT_SECRET 없으면 시작 실패
+export SPRING_PROFILES_ACTIVE=prod
+export DB_USERNAME="..." DB_PASSWORD="..." JWT_SECRET="..."   # JWT_SECRET 최소 32자
+export OPENAI_API_KEY="..." GOOGLE_OAUTH_CLIENT_ID="..."
+mvn spring-boot:run
 ```
 
-- H2 로컬 실행 스크립트 `backend/run-backend-h2.cmd`는 Windows 전용입니다.
+| 프로필 | 설정 파일 | DB |
+|---|---|---|
+| `local` (기본값) | `application-local.yml` | H2 파일 (`backend/data/`, git 제외) |
+| `prod` | `application-prod.yml` | MySQL, Flyway `baseline-on-migrate` |
+| `test` | `src/test/resources/application-test.yml` | H2 인메모리 (`MODE=MySQL`) |
+
+- Windows는 `backend/run-backend-h2.cmd`로 `local` 프로필을 실행할 수 있습니다.
+
+### DB 스키마 (Flyway)
+
+- 스키마는 `backend/src/main/resources/db/migration/`의 버전별 SQL로만 바꿉니다. Hibernate는 `ddl-auto: validate`로 검사만 합니다.
+- 테이블을 바꾸려면 `V{다음 번호}__설명.sql`을 새로 추가합니다. **이미 적용된 마이그레이션 파일은 수정하지 않습니다.** (체크섬 불일치로 시작 실패)
+- SQL은 MySQL과 H2(`MODE=MySQL`) 양쪽에서 실행되는 문법만 씁니다. 인덱스 이름은 스키마 전체에서 유일하게 짓습니다.
+- `@Enumerated(EnumType.STRING)` 필드는 `@JdbcTypeCode(SqlTypes.VARCHAR)`를 함께 붙입니다. 없으면 MySQL에서 native `ENUM`을 기대해 `validate`가 실패합니다.
+- H2 테스트는 `MySQLDialect` 동작을 재현하지 못합니다. 컬럼 타입 관련 변경은 실제 MySQL(예: Docker `mysql:8.0`)에서 `prod` 프로필 기동으로 확인합니다.
 
 ### 테스트 (⚠️ JDK 17 필수)
 
@@ -169,7 +186,7 @@ npm run build
 - 인증: JWT(JJWT 0.12), 만료 24시간. 컨트롤러에서 `(Long) authentication.getPrincipal()`로 userId를 얻습니다.
 - AI: 현재 정규식 규칙 기반(`AiService`). OpenAI 의존성은 있으나 미사용 → LLM 연동 예정.
 - 리마인더: `ReminderScheduler`가 매분 실행, 1시간 전 일정에 `ReminderLog`/`ChatLog` 기록.
-- DB: MySQL(기본), H2(테스트·로컬). 현재 `ddl-auto: update` → Flyway 도입 예정.
+- DB: MySQL(`prod`), H2(`local`·`test`). 스키마는 Flyway 마이그레이션(`db/migration`)으로 관리하고 Hibernate는 `validate`만 합니다.
 
 ### 프론트엔드 (`frontend/src/`)
 
@@ -199,7 +216,7 @@ npm run build
 
 | 단계 | 주제 | 상태 |
 |---|---|---|
-| 1. 기초 체력 | 공통 예외 처리 → 프로필 분리 + Flyway → Controller 테스트 → Swagger | 예외 처리 진행중 (`feature/global-exception`) |
+| 1. 기초 체력 | 공통 예외 처리 → 프로필 분리 + Flyway → Controller 테스트 → Swagger | 공통 예외 처리 완료, 프로필 분리 + Flyway 진행중 (`feature/profile-flyway`) |
 | 2. 도메인 & 데이터 | 일정 겹침 검사, 반복 일정, Reminder N+1 해결, 페이징 | 대기 |
 | 3. 외부 연동 | AiService 전략 패턴 분리, LLM 연동 + 타임아웃/재시도/폴백 | 대기 |
 | 4. 인증 & 성능 | Refresh Token, Redis 캐싱, 리마인더 중복 방지(ShedLock) | 대기 |
@@ -210,6 +227,6 @@ npm run build
 ## 11. 알려진 제한사항
 
 - Google 로그인이 `window.prompt`로 ID 토큰을 받음 → OAuth 버튼 방식으로 전환 예정
-- `JWT_SECRET`에 기본값이 있음 → 운영에서는 환경 변수 필수화 필요
+- `JWT_SECRET` 기본값은 `local` 프로필에만 있음 (`prod`는 필수). 운영 배포 시 반드시 설정
 - CORS origin이 코드에 하드코딩됨 → 환경 변수화 필요
 - 이전 코드 리뷰 결과: `.claude/CODE_REVIEW.md`
