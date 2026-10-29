@@ -136,7 +136,7 @@ public class AiService {
         LocalDateTime to = today.plusDays(1).atStartOfDay();
 
         List<ScheduleResponse> schedules = scheduleRepository
-            .findByUserIdAndStartAtBetweenOrderByStartAtAsc(userId, from, to)
+            .findUserSchedulesInRange(userId, from, to)
             .stream()
             .map(ScheduleResponse::from)
             .toList();

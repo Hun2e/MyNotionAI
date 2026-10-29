@@ -33,7 +33,7 @@ public class ScheduleService {
         LocalDateTime from = yearMonth.atDay(1).atStartOfDay();
         LocalDateTime to = yearMonth.plusMonths(1).atDay(1).atStartOfDay();
 
-        return scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(userId, from, to)
+        return scheduleRepository.findUserSchedulesInRange(userId, from, to)
             .stream()
             .map(ScheduleResponse::from)
             .toList();

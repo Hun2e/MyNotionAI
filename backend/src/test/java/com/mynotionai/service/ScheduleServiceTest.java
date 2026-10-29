@@ -43,6 +43,12 @@ class ScheduleServiceTest {
     private static final Long OWNER_ID = 1L;
     private static final Long OTHER_USER_ID = 2L;
     private static final Long SCHEDULE_ID = 100L;
+    private static final LocalDateTime SEPTEMBER_START = LocalDateTime.parse("2026-09-01T00:00:00");
+    private static final LocalDateTime OCTOBER_START = LocalDateTime.parse("2026-10-01T00:00:00");
+    private static final LocalDateTime FEBRUARY_START = LocalDateTime.parse("2026-02-01T00:00:00");
+    private static final LocalDateTime MARCH_START = LocalDateTime.parse("2026-03-01T00:00:00");
+    private static final LocalDateTime DECEMBER_START = LocalDateTime.parse("2026-12-01T00:00:00");
+    private static final LocalDateTime NEXT_YEAR_START = LocalDateTime.parse("2027-01-01T00:00:00");
 
     @Mock
     private ScheduleRepository scheduleRepository;
@@ -230,30 +236,30 @@ class ScheduleServiceTest {
         @DisplayName("해당 월과 다음 달 1일 0시로 조회하고 mock이 반환한 일정을 변환한다")
         void queriesExactMonthRange() {
             // 실제 쿼리의 경계 포함 여부가 아니라 조회 인자와 mock 결과 변환을 검증한다.
-            given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            given(scheduleRepository.findUserSchedulesInRange(
                 OWNER_ID,
-                LocalDateTime.of(2026, 9, 1, 0, 0),
-                LocalDateTime.of(2026, 10, 1, 0, 0)
+                SEPTEMBER_START,
+                OCTOBER_START
             )).willReturn(List.of(schedule(owner())));
 
-            List<ScheduleResponse> result =
-                scheduleService.getMonthlySchedules(OWNER_ID, 2026, 9);
+            List<ScheduleResponse> result = scheduleService.getMonthlySchedules(
+                OWNER_ID, SEPTEMBER_START.getYear(), SEPTEMBER_START.getMonthValue());
 
-            assertThat(result).hasSize(1);
+            assertThat(result).extracting(ScheduleResponse::getId).containsExactly(SCHEDULE_ID);
         }
 
         @Test
         @DisplayName("평년 2월은 3월 1일 0시로 조회하고 mock의 빈 결과를 반환한다")
         void handlesFebruaryBoundary() {
             // 평년의 조회 인자를 검증하며 윤년이나 실제 DB의 날짜 필터링은 검증하지 않는다.
-            given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            given(scheduleRepository.findUserSchedulesInRange(
                 OWNER_ID,
-                LocalDateTime.of(2026, 2, 1, 0, 0),
-                LocalDateTime.of(2026, 3, 1, 0, 0)
+                FEBRUARY_START,
+                MARCH_START
             )).willReturn(List.of());
 
-            List<ScheduleResponse> result =
-                scheduleService.getMonthlySchedules(OWNER_ID, 2026, 2);
+            List<ScheduleResponse> result = scheduleService.getMonthlySchedules(
+                OWNER_ID, FEBRUARY_START.getYear(), FEBRUARY_START.getMonthValue());
 
             assertThat(result).isEmpty();
         }
@@ -261,14 +267,14 @@ class ScheduleServiceTest {
         @Test
         @DisplayName("12월은 다음 해 1월 1일 0시로 조회하고 mock의 빈 결과를 반환한다")
         void handlesYearBoundary() {
-            given(scheduleRepository.findByUserIdAndStartAtBetweenOrderByStartAtAsc(
+            given(scheduleRepository.findUserSchedulesInRange(
                 OWNER_ID,
-                LocalDateTime.of(2026, 12, 1, 0, 0),
-                LocalDateTime.of(2027, 1, 1, 0, 0)
+                DECEMBER_START,
+                NEXT_YEAR_START
             )).willReturn(List.of());
 
-            List<ScheduleResponse> result =
-                scheduleService.getMonthlySchedules(OWNER_ID, 2026, 12);
+            List<ScheduleResponse> result = scheduleService.getMonthlySchedules(
+                OWNER_ID, DECEMBER_START.getYear(), DECEMBER_START.getMonthValue());
 
             assertThat(result).isEmpty();
         }
