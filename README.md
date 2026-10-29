@@ -32,11 +32,22 @@
 
 동작하는 MVP를 먼저 완성한 뒤, **실무 백엔드 주제(예외 설계, 테스트, DB 마이그레이션, 외부 API 연동, 운영)를 단계적으로 적용하는 것**을 목표로 고도화하고 있습니다.
 
-| 로그인 | 캘린더 | AI 패널 |
-|---|---|---|
-| ![로그인](docs/WireFrame/Genspark_ver0/2.%20Login%20Page.png) | ![캘린더](docs/WireFrame/Genspark_ver0/5.%20Calendar%20View.png) | ![AI 패널](docs/WireFrame/Genspark_ver0/6.%20Schedule%20Modal.png) |
+### 홈 · 오늘 일정과 AI 패널
 
-<sub>※ 화면 설계 단계의 와이어프레임입니다.</sub>
+![홈 화면](docs/screenshots/02-home.png)
+
+### 캘린더 · 자연어로 일정 초안 생성
+
+![캘린더와 AI 초안](docs/screenshots/03-calendar.png)
+
+<details>
+<summary>로그인 화면</summary>
+
+![로그인 화면](docs/screenshots/01-login.png)
+
+</details>
+
+<sub>※ 로컬 환경(`local` 프로필)에서 데모 데이터로 촬영한 실제 화면입니다. 초기 와이어프레임은 [`docs/WireFrame`](docs/WireFrame)에 있습니다.</sub>
 
 ## 주요 기능
 
@@ -263,6 +274,8 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 |---|---|---|
 | 높음 | AI 시간 해석이 JDK 17에서 `"3시"`를 인식하지 못하고, `"오후"`를 처리하지 않아 오후 3시가 03:00으로 해석될 수 있음 | `fix/ai-time-parsing` |
 | 높음 | 인증 실패가 401이 아닌 403으로 응답되어, 프론트의 "401이면 토큰 삭제" 처리가 동작하지 않음 | 4단계 `AuthenticationEntryPoint` |
+| 중간 | AI 초안 제목에 시간과 요청 문구가 남음 (예: `"15:00에 팀 미팅 추가해줘"` → 제목 그대로) | `fix/ai-time-parsing`과 함께 |
+| 중간 | 홈의 "다음 일정"에 이미 지난 일정이 표시됨 | 프론트 수정 |
 | 중간 | AI 대화 로그를 전부 조회한 뒤 메모리에서 잘라냄 | 2단계 페이징 |
 | 중간 | 리마인더가 일정마다 중복 확인 쿼리를 실행(N+1)하고, 서버가 여러 대면 중복 실행 위험 | 2단계 N+1 해결, 4단계 ShedLock |
 | 중간 | OpenAI 설정과 라이브러리는 있으나 실제 호출 코드 없음 (규칙 기반만 동작) | 3단계 LLM 연동 |
