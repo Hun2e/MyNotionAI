@@ -1,0 +1,35 @@
+# 테스트 전용 설정
+# MySQL 대신 H2 인메모리 DB를 사용해 외부 의존성 없이 테스트를 실행한다.
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  security:
+    jwt:
+      # 테스트용 고정 키 (HS256 최소 길이 256비트 충족)
+      secret: test-secret-key-for-unit-tests-only-do-not-use-in-production
+      expiration: 86400000
+
+logging:
+  level:
+    root: WARN
+    com.mynotionai: INFO
+
+openai:
+  api-key: test-key
+  model: gpt-4
+
+google:
+  oauth:
+    client-id: test-client-id
