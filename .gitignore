@@ -17,5 +17,11 @@ Thumbs.db
 # Env
 .env
 application-*.yml
+# 프로필 설정은 환경 변수 참조와 로컬 개발용 기본값만 포함한다.
+!backend/src/main/resources/application-local.yml
+!backend/src/main/resources/application-prod.yml
 # 테스트 전용 설정(가짜 값만 포함)은 저장소에 포함
 !backend/src/test/resources/application-test.yml
+
+# 로컬 H2 파일 데이터베이스
+backend/data/
