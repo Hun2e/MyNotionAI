@@ -84,7 +84,8 @@
 ### 백엔드 예외 처리 규칙
 
 - 비즈니스 예외는 `BusinessException(ErrorCode.XXX)`으로 던집니다. 새 에러는 `exception/ErrorCode.java`에 추가합니다.
-- 모든 에러 응답은 `GlobalExceptionHandler`가 `ApiErrorResponse` 형식 `{code, message, timestamp, fieldErrors?}`로 변환합니다.
+- Spring MVC 예외 처리 경로의 에러 응답은 `GlobalExceptionHandler`가 `ApiErrorResponse` 형식 `{code, message, timestamp, fieldErrors?}`로 변환합니다.
+- Security 필터 단계(401/403) 응답 통일은 미구현이며, 4단계에서 처리합니다.
 - `ResponseStatusException`은 새 코드에서 사용하지 않습니다. (`AiService`, `GoogleTokenVerifierService`에 남아 있으며 순차 교체 예정)
 
 ## 5. Git 규칙
