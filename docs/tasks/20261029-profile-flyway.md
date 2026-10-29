@@ -1,6 +1,6 @@
 # 프로필 분리 + Flyway 도입
 - 브랜치: feature/profile-flyway
-- 상태: 진행중
+- 상태: 리뷰중 (Codex 구현, Claude 검증: mvn test 48개 통과, local·prod 기동 확인)
 
 ## 배경 (왜 하는가)
 1. **설정이 한 파일에 섞여 있다.** `application.yml` 하나에 MySQL 접속 정보, `show-sql: true`, 개발용 JWT 기본값이 함께 있다. 그래서 로컬과 운영의 설정을 구분할 수 없고, 운영에서 `JWT_SECRET`을 빠뜨려도 기본값으로 앱이 그냥 켜진다.
@@ -50,12 +50,12 @@
 - 커밋, 브랜치 전환
 
 ## 완료 조건
-- [ ] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 47개 + 신규)
-- [ ] 테스트가 Flyway로 스키마를 만들고 `ddl-auto: validate`로 엔티티를 검증한다
-- [ ] Mac에서 `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn spring-boot:run`만으로(환경 변수 없이) `local` 프로필이 켜지고 `GET /api/calendar/events`가 401을 반환한다 (앱 정상 기동 확인)
-- [ ] `prod` 프로필에서 `JWT_SECRET`이 없으면 앱이 시작되지 않는다
-- [ ] 공통 `application.yml`에 비밀값 기본값이 없다
-- [ ] 수정·추가 파일: `pom.xml`, `application.yml`, `application-local.yml`, `application-prod.yml`, `V1__init_schema.sql`, `application-test.yml`, `ScheduleRepositoryTest.java`, `FlywayMigrationTest.java`, `run-backend-h2.cmd`, `.gitignore`
+- [x] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 47개 + 신규 1개 = 48개)
+- [x] 테스트가 Flyway로 스키마를 만들고 `ddl-auto: validate`로 엔티티를 검증한다
+- [x] Mac에서 `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn spring-boot:run`만으로(환경 변수 없이) `local` 프로필이 켜지고 V1이 적용된다. 인증 없는 `GET /api/calendar/events`는 **403**을 반환한다. (지시서의 401 예상은 PM 오류. `AuthenticationEntryPoint`가 없어 Security 기본값 403이 나온다. 4단계에서 401로 통일.)
+- [x] `prod` 프로필에서 `JWT_SECRET`이 없으면 `Could not resolve placeholder 'JWT_SECRET'`으로 시작에 실패한다
+- [x] 공통 `application.yml`에 비밀값 기본값이 없다
+- [x] 수정·추가 파일: `pom.xml`, `application.yml`, `application-local.yml`, `application-prod.yml`, `V1__init_schema.sql`, `application-test.yml`, `ScheduleRepositoryTest.java`, `FlywayMigrationTest.java`, `run-backend-h2.cmd`, `.gitignore`, (범위 조정) `ChatLog.java`, `AiAction.java`
 
 ## 참고 파일
 - `backend/src/main/resources/application.yml`
@@ -64,3 +64,11 @@
 - `backend/run-backend-h2.cmd`
 
 ## 질문/이슈 (Codex 작성)
+
+- **H2 인덱스 이름 충돌로 V1 적용 불가:** `ChatLog`와 `AiAction` 모두 `@Index(name = "idx_user_created", columnList = "user_id, created_at")`를 선언한다. 엔티티와 동일한 이름으로 V1을 작성하고 JDK 17 / H2 2.2.224의 `MODE=MySQL`에서 직접 실행하자, `CREATE INDEX idx_user_created ON ai_actions (user_id, created_at)`에서 `Index "IDX_USER_CREATED" already exists` (`42111-224`)가 발생했다. H2는 같은 스키마 안에서 인덱스 이름이 유일해야 하므로, 현재의 이름 유지 조건과 H2 실행 성공 조건을 동시에 만족할 수 없다. 지시대로 엔티티와 인덱스 이름을 변경하지 않았다. 한쪽 엔티티와 V1의 인덱스 이름을 함께 변경하도록 작업 범위를 조정할지 결정이 필요하다. 해결 전에는 Flyway 통합 테스트와 로컬 정상 기동 완료 조건을 충족할 수 없다.
+- **샌드박스 검증 제한:** 지정된 JDK 17 `mvn test`는 Flyway 9.22.3 의존성이 캐시에 없고 `~/.m2/repository/org/flywaydb` 생성이 `Operation not permitted`로 차단되어 테스트 실행 전에 실패했다. 기존 Maven 캐시를 쓰기 가능한 임시 저장소로 복사해 재시도했으나, 이번에는 `repo.maven.apache.org`의 이름 해석 실패로 의존성을 다운로드하지 못했다. 테스트 실행 수는 0개이며, `target/` 쓰기나 Mockito 단계까지 도달하지 않았다. `local` 및 `prod`의 `spring-boot:run`도 같은 의존성 미해결로 실행할 수 없어 HTTP 401 응답과 JWT_SECRET 누락에 의한 시작 실패는 미검증이다. 의존성 다운로드가 가능한 환경에서 인덱스 충돌을 해결한 뒤 재검증해야 한다.
+- (PM 답변) 범위를 조정한다. 사용자 승인 완료. — Claude
+  - `ChatLog`의 `@Index` 이름을 `idx_chat_user_created`로, `AiAction`의 `@Index` 이름을 `idx_ai_user_created`로 바꾼다. V1 SQL도 같은 이름으로 맞춘다.
+  - 수정 허용 파일에 `ChatLog.java`, `AiAction.java`를 추가한다. 인덱스 이름 외의 엔티티 변경은 하지 않는다.
+  - 기존 MySQL DB(`ddl-auto: update`로 생성)에는 인덱스가 `idx_user_created`로 남아 있다. baseline으로 V1 적용 상태로 인정하므로 동작에는 문제가 없고, 이름 차이는 알려진 차이로 둔다.
+  - 샌드박스 검증 제한: `mvn test`와 기동 확인은 Claude가 로컬에서 수행한다.
