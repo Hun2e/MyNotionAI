@@ -91,6 +91,7 @@
 ## 5. Git 규칙
 
 - 커밋 메시지는 **한국어**로 작성합니다. 예: `공통 예외 처리 GlobalExceptionHandler 추가`
+- 커밋 메시지는 "무엇을 왜 바꿨는지"를 담은 한국어 문장 한 줄로 쓰고, `feat:`, `fix:`, `test:`, `docs:` 같은 영어 접두어(Conventional Commits 형식)는 **붙이지 않습니다**. 좋은 예: `관리 포트 전용 SecurityFilterChain 추가` / 나쁜 예: `feat: 관리 포트 전용 SecurityFilterChain 추가`
 - 브랜치명: `feature/기능명`, `fix/버그명`
 - 커밋은 **작은 단위**로 나눕니다. (기능 코드 / 테스트 / 문서 분리)
 - main에 직접 커밋하지 않습니다. 머지와 push는 사용자 승인 후에만 합니다.
