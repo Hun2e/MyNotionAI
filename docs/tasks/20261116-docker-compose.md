@@ -1,6 +1,6 @@
 # Docker Compose 로컬 운영 스택 (앱 · MySQL · Prometheus · Grafana)
 - 브랜치: feature/docker-compose
-- 상태: 대기
+- 상태: 진행중
 
 ## 배경 (왜 하는가)
 1. **지표는 나오는데 볼 곳이 없다.** PR #6·#8로 관리 포트 8081에서 `/actuator/health`(liveness·readiness)와 `/actuator/prometheus`가 노출된다. 하지만 지표를 모으는 Prometheus와 그래프로 보여 주는 Grafana가 없어서 숫자를 쌓아 두고 비교할 수 없다.
@@ -225,3 +225,8 @@
 7. **Flyway `baseline-on-migrate`**: 빈 MySQL(새 볼륨)에서는 baseline 없이 V1이 정상 적용될 것으로 예상한다. 반대로 **테이블은 있는데 `flyway_schema_history`가 없는 스키마**에서는 V1이 건너뛰어진다. 볼륨에 다른 데이터가 남아 이상하면 `down -v`로 초기화한다.
 8. **CORS**: `SecurityConfig`에 `http://localhost:5173` 등이 하드코딩돼 있다. 이번 작업은 curl로만 검증하므로 영향 없다. 브라우저에서 프론트(호스트 `npm run dev`) → 컨테이너 API 연결도 같은 origin이라 동작할 것으로 예상하나 확인 대상은 아니다.
 9. **JVM 메모리**: `JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0`만 제안했다. compose `mem_limit` 같은 컨테이너 메모리 제한은 넣지 않는다(부하 테스트 작업에서 필요하면 추가).
+
+### 사용자 결정 (2026-11-16, Claude 기록)
+- 지시서 승인 완료.
+- **시간대**: `app` 서비스에 `TZ: Asia/Seoul` 환경 변수를 추가한다(PM 사전 표시 5 권장안 채택, 코드 수정 없음).
+- **네트워크 이름 고정**: 다음 작업 `feature/load-test`의 k6 컨테이너가 `--network`로 붙을 수 있도록 사용자 정의 네트워크를 쓰고 이름을 `mynotion-net`으로 고정한다(`networks: mynotion-net: name: mynotion-net`). 모든 서비스가 이 네트워크에 붙는다.
