@@ -1,6 +1,6 @@
 # Docker Compose 로컬 운영 스택 (앱 · MySQL · Prometheus · Grafana)
 - 브랜치: feature/docker-compose
-- 상태: 진행중
+- 상태: 완료
 
 ## 배경 (왜 하는가)
 1. **지표는 나오는데 볼 곳이 없다.** PR #6·#8로 관리 포트 8081에서 `/actuator/health`(liveness·readiness)와 `/actuator/prometheus`가 노출된다. 하지만 지표를 모으는 Prometheus와 그래프로 보여 주는 Grafana가 없어서 숫자를 쌓아 두고 비교할 수 없다.
@@ -177,31 +177,31 @@
 - push, PR 생성, main 커밋
 
 ## 완료 조건 (검증 가능한 항목)
-- [ ] `cp .env.example .env` 후 `docker compose up -d --build` → `docker compose ps`에서 4개 서비스 모두 `healthy`
-- [ ] `.env`에서 `JWT_SECRET`을 지우고 `docker compose config`를 실행하면 누락 메시지와 함께 실패한다 (`${VAR:?}` 동작 확인, 확인 후 원복)
-- [ ] API 동작: 아래 순서로 200 응답과 토큰 확인
+- [x] `cp .env.example .env` 후 `docker compose up -d --build` → `docker compose ps`에서 4개 서비스 모두 `healthy`
+- [x] `.env`에서 `JWT_SECRET`을 지우고 `docker compose config`를 실행하면 누락 메시지와 함께 실패한다 (`${VAR:?}` 동작 확인, 확인 후 원복)
+- [x] API 동작: 아래 순서로 200 응답과 토큰 확인
   ```bash
   curl -s -X POST http://localhost:8080/api/auth/register -H 'Content-Type: application/json' \
     -d '{"email":"compose@test.com","password":"password123","nickname":"compose"}'
   curl -s -X POST http://localhost:8080/api/auth/login -H 'Content-Type: application/json' \
     -d '{"email":"compose@test.com","password":"password123"}'
   ```
-- [ ] Prometheus 타깃: `curl -s http://localhost:9090/api/v1/targets`에서 `job="mynotion-backend"`의 `health`가 `"up"`
-- [ ] Prometheus 쿼리: `curl -s 'http://localhost:9090/api/v1/query?query=up{job="mynotion-backend"}'` 결과 값 `1`
-- [ ] Grafana provisioning 확인 (`.env` 값을 셸에 불러온 뒤 실행: `set -a; . ./.env; set +a`)
+- [x] Prometheus 타깃: `curl -s http://localhost:9090/api/v1/targets`에서 `job="mynotion-backend"`의 `health`가 `"up"`
+- [x] Prometheus 쿼리: `curl -s 'http://localhost:9090/api/v1/query?query=up{job="mynotion-backend"}'` 결과 값 `1`
+- [x] Grafana provisioning 확인 (`.env` 값을 셸에 불러온 뒤 실행: `set -a; . ./.env; set +a`)
   - `curl -s -u "$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD" http://localhost:3000/api/datasources` → uid `prometheus` 데이터소스 존재
   - `curl -s -u "$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD" 'http://localhost:3000/api/search?query=MyNotion'` → `mynotion-overview` 대시보드 존재
   - API를 몇 번 호출한 뒤 대시보드 6개 패널(RPS, p95, p99, 5xx 비율, HikariCP, JVM 힙)에 값이 표시됨 (스크린샷 또는 패널 쿼리 API로 확인)
-- [ ] 포트 정책: 호스트에서 `curl http://localhost:8081/actuator/health` → 연결 실패(공개 안 됨), `docker compose port app 8081` 결과 없음, MySQL 3306도 미공개. 공개 포트는 `docker compose ps`에서 `127.0.0.1:` 바인딩으로 표시
-- [ ] 비 root 실행: `docker compose exec app id -u` → `0`이 아님
-- [ ] 재기동 후 Flyway 정상: `docker compose down -v` → `docker compose up -d` → 모든 서비스 healthy, 아래 쿼리에서 V1 `success=1`
+- [x] 포트 정책: 호스트에서 `curl http://localhost:8081/actuator/health` → 연결 실패(공개 안 됨), `docker compose port app 8081` 결과 없음, MySQL 3306도 미공개. 공개 포트는 `docker compose ps`에서 `127.0.0.1:` 바인딩으로 표시
+- [x] 비 root 실행: `docker compose exec app id -u` → `0`이 아님
+- [x] 재기동 후 Flyway 정상: `docker compose down -v` → `docker compose up -d` → 모든 서비스 healthy, 아래 쿼리에서 V1 `success=1`
   ```bash
   docker compose exec mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" mynotion -e "SELECT version, success FROM flyway_schema_history"'
   ```
-- [ ] 볼륨 유지: `docker compose down`(볼륨 유지) → `up -d` 후 위에서 가입한 계정으로 로그인 성공
-- [ ] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` → 기존 56개 전부 통과 (Java 코드 변경 없음)
-- [ ] 비밀값 하드코딩 없음: `git diff main --stat`에 `.env` 없음, 신규 파일에 실제 비밀값 없음(`.env.example`은 더미 값만)
-- [ ] 생성·수정 파일이 위 목록과 일치
+- [x] 볼륨 유지: `docker compose down`(볼륨 유지) → `up -d` 후 위에서 가입한 계정으로 로그인 성공
+- [x] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` → 기존 56개 전부 통과 (Java 코드 변경 없음)
+- [x] 비밀값 하드코딩 없음: `git diff main --stat`에 `.env` 없음, 신규 파일에 실제 비밀값 없음(`.env.example`은 더미 값만)
+- [x] 생성·수정 파일이 위 목록과 일치
 
 ## 참고 파일
 - `backend/src/main/resources/application.yml` (관리 포트 8081, probes, `percentiles-histogram`, `application` 태그)
@@ -230,3 +230,25 @@
 - 지시서 승인 완료.
 - **시간대**: `app` 서비스에 `TZ: Asia/Seoul` 환경 변수를 추가한다(PM 사전 표시 5 권장안 채택, 코드 수정 없음).
 - **네트워크 이름 고정**: 다음 작업 `feature/load-test`의 k6 컨테이너가 `--network`로 붙을 수 있도록 사용자 정의 네트워크를 쓰고 이름을 `mynotion-net`으로 고정한다(`networks: mynotion-net: name: mynotion-net`). 모든 서비스가 이 네트워크에 붙는다.
+
+## 검증 기록 (2026-11-16, Claude)
+- 커밋(cherry-pick): 구현 `52e6778`, `d03b5b1`, `9fb80eb` / 리뷰 반영 `1e49346`(🔴 5xx 패널), `a5770bf`(🟡 MySQL healthcheck) / 리뷰 문서 `7ab3f28` (🔴 1, 🟡 1, 🟢 3 → 🔴·🟡 모두 반영)
+- 이미지 태그(PM 사전 표시 3): `prom/prometheus:v3.16.0`, `grafana/grafana:13.3.1`. 5개 이미지 모두 arm64 pull 성공(PM 사전 표시 2), Prometheus·Grafana 이미지에 `wget` 존재(PM 사전 표시 4)
+- 실행 환경: Docker 29.8.1, Compose v5.5.1, arm64, Docker Desktop CPU 10 / 메모리 약 7.7GB
+- `docker compose up -d --build` → 4개 서비스 healthy. 공개 포트는 `127.0.0.1:8080/9090/3000`만, 호스트 8081 연결 실패, `docker compose port app 8081`·`mysql 3306` 매핑 없음
+- API: register 200, login 200(토큰), 익명 일정 조회 403. 앱 uid 999(비 root), 컨테이너 시간대 KST
+- Prometheus: target `app:8081` health `up`, `up{job="mynotion-backend"}` = 1
+- Grafana: datasource uid `prometheus`(기본), 대시보드 `mynotion-overview` 자동 등록, 익명 API 401. 트래픽 후 패널 값: RPS 약 4.0, p95 11.7ms, p99 15.1ms, Hikari active/max/pending 0/10/0, JVM 힙 약 87MB
+- 5xx 패널(리뷰 반영 후): 무트래픽 빈 값 / 정상 트래픽 0 / 500 혼합 시 0.35 — 3가지 구분 확인
+- `JWT_SECRET` 누락 시 `docker compose config`가 "required variable JWT_SECRET is missing"로 실패
+- Flyway: 빈 볼륨 첫 기동 V1 success=1 / `down` 후 `up` 기존 계정 로그인 200 / `down -v` 후 V1 재적용, 기존 계정 401
+- `mvn test` (JDK 17): Tests run 56, Failures 0, Errors 0
+- 검증 후 `docker compose down -v`로 정리
+
+### 지시서와 달라진 점 (리뷰 반영)
+- 5xx 에러 비율 PromQL: 지시서 예시식은 5xx 시계열이 없으면 결과가 비어 완료 조건과 충돌했다. 분자에만 `or vector(0)`을 붙였다(무트래픽은 계속 빈 값으로 구분).
+- MySQL healthcheck: 비밀번호가 프로세스 인수로 노출되지 않도록 `mysqladmin ping -h 127.0.0.1 --silent`로 바꿨다. `ping`은 인증 실패여도 서버가 응답하면 성공하므로 검사 의미는 같다.
+
+### 다음 작업(feature/load-test)에 넘길 사실
+- 네트워크 이름 `mynotion-net`, 앱 서비스 `app`, 컨테이너 내부 포트 8080 → k6 `BASE_URL=http://app:8080/api`, `--network mynotion-net`
+- Micrometer `uri` 라벨에는 context-path `/api`가 붙지 않는다(예: `/calendar/events`, `/auth/login`)
