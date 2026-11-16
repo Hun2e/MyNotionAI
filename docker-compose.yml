@@ -18,7 +18,8 @@ services:
       - mysql-data:/var/lib/mysql
     healthcheck:
       # 초기화용 소켓 서버를 준비 완료로 판단하지 않도록 TCP로 검사한다.
-      test: ["CMD-SHELL", 'mysqladmin ping -h 127.0.0.1 -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" --silent']
+      # 비밀번호의 프로세스 인수 노출을 막는다. ping은 인증 실패여도 서버 응답 시 성공한다.
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --silent"]
       interval: 10s
       timeout: 5s
       retries: 10
