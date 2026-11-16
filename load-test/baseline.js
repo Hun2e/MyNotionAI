@@ -167,12 +167,23 @@ function metricSummary(name, metric) {
   return `${name}: ${values.join(', ')}${thresholds.length ? ` [${thresholds.join(', ')}]` : ''}`;
 }
 
+function summaryData(data) {
+  return {
+    metrics: data.metrics,
+    root_group: data.root_group,
+    options: data.options,
+    state: data.state,
+    runId: data.setup_data.runId,
+  };
+}
+
 export function handleSummary(data) {
-  const path = `results/${data.setup_data.runId}-summary.json`;
-  const lines = Object.entries(data.metrics).sort(([left], [right]) => left.localeCompare(right))
+  const summary = summaryData(data);
+  const path = `results/${summary.runId}-summary.json`;
+  const lines = Object.entries(summary.metrics).sort(([left], [right]) => left.localeCompare(right))
     .map(([name, metric]) => metricSummary(name, metric));
   return {
-    [path]: JSON.stringify(data, null, JSON_INDENT),
+    [path]: JSON.stringify(summary, null, JSON_INDENT),
     stdout: [
       'k6 기준선 요약: 전체 실행 집계이며 유지 구간 전용 수치가 아닙니다.',
       `목표 VU: read=${scenarioVus.read}, chat_logs=${scenarioVus.chat_logs}, write=${scenarioVus.write}`,
