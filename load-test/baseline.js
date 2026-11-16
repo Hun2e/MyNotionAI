@@ -55,8 +55,8 @@ function requireOk(response, operation) {
   }
 }
 
-function authenticate(index) {
-  const email = `${config.runId}-${index}@loadtest.local`;
+function authenticate(index, runId) {
+  const email = `${runId}-${index}@loadtest.local`;
   let response = register(email, `loadtest-${index}`);
   const body = jsonBody(response);
   if (response.status === HTTP_CONFLICT && body && body.code === 'EMAIL_ALREADY_EXISTS') {
@@ -110,19 +110,20 @@ function seedChatLogs(token) {
 }
 
 export function setup() {
+  const runId = config.runId === null ? `baseline-${Date.now()}` : config.runId;
   const users = [];
   for (let index = 0; index < config.userCount; index += 1) {
-    const token = authenticate(index);
+    const token = authenticate(index, runId);
     seedEvents(token, index);
     seedChatLogs(token);
     users.push({ token });
   }
   // 준비 단계는 예외로 중단하고, checks 지표에는 측정 중 검증만 기록한다.
-  return users;
+  return { runId, users };
 }
 
 function userToken(data) {
-  return data[(__VU - FIRST_VU) % data.length].token;
+  return data.users[(__VU - FIRST_VU) % data.users.length].token;
 }
 
 export function read(data) {
@@ -167,7 +168,7 @@ function metricSummary(name, metric) {
 }
 
 export function handleSummary(data) {
-  const path = `results/${config.runId}-summary.json`;
+  const path = `results/${data.setup_data.runId}-summary.json`;
   const lines = Object.entries(data.metrics).sort(([left], [right]) => left.localeCompare(right))
     .map(([name, metric]) => metricSummary(name, metric));
   return {

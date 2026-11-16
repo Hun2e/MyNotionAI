@@ -77,7 +77,10 @@ function password() {
 }
 
 function runId() {
-  const value = __ENV.RUN_ID === undefined ? `baseline-${Date.now()}` : __ENV.RUN_ID;
+  if (__ENV.RUN_ID === undefined) {
+    return null;
+  }
+  const value = __ENV.RUN_ID;
   if (!/^[A-Za-z0-9_-]+$/.test(value) || value.length > LIMITS.MAX_RUN_ID_LENGTH) {
     throw new Error(`RUN_ID는 영문·숫자·밑줄·하이픈으로 ${LIMITS.MAX_RUN_ID_LENGTH}자 이내여야 합니다.`);
   }
