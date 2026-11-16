@@ -1,0 +1,105 @@
+# 준비: cp .env.example .env 후 더미 값을 로컬에서 사용할 값으로 바꾼다.
+# 실행: docker compose up -d --build
+# 종료: docker compose down (데이터 유지), docker compose down -v (데이터도 삭제)
+# 접속: API http://localhost:8080/api, Prometheus http://localhost:9090, Grafana http://localhost:3000
+# 공개 포트는 로컬에서만 접근하도록 127.0.0.1에 바인딩한다.
+# MySQL 3306과 앱 관리 포트 8081은 호스트에 공개하지 않는다.
+name: mynotion
+
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: mynotion
+      MYSQL_USER: "${DB_USERNAME:?DB_USERNAME가 .env에 필요합니다}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD가 .env에 필요합니다}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD가 .env에 필요합니다}"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      # 초기화용 소켓 서버를 준비 완료로 판단하지 않도록 TCP로 검사한다.
+      test: ["CMD-SHELL", 'mysqladmin ping -h 127.0.0.1 -u"$$MYSQL_USER" -p"$$MYSQL_PASSWORD" --silent']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - mynotion-net
+
+  app:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/mynotion?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      DB_USERNAME: "${DB_USERNAME:?DB_USERNAME가 .env에 필요합니다}"
+      DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD가 .env에 필요합니다}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET가 .env에 필요합니다}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_OAUTH_CLIENT_ID:-}"
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      TZ: Asia/Seoul
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - mynotion-net
+
+  prometheus:
+    image: prom/prometheus:v3.16.0
+    # 앱이 시작되지 않아도 타깃 상태를 확인할 수 있도록 독립적으로 기동한다.
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - mynotion-net
+
+  grafana:
+    image: grafana/grafana:13.3.1
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER가 .env에 필요합니다}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD가 .env에 필요합니다}"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning/datasources/prometheus.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+      - ./monitoring/grafana/provisioning/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
+      - ./monitoring/grafana/dashboards/mynotion-overview.json:/var/lib/grafana/dashboards/mynotion-overview.json:ro
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - mynotion-net
+
+networks:
+  mynotion-net:
+    name: mynotion-net
+
+volumes:
+  mysql-data:
+  prometheus-data:
+  grafana-data:
