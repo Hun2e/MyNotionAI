@@ -1,6 +1,6 @@
 # Actuator + Prometheus 지표 노출
 - 브랜치: feature/observability
-- 상태: 대기
+- 상태: 완료
 
 ## 배경 (왜 하는가)
 1. **앱 상태를 볼 수 없다.** 요청 수, 응답 시간, 에러 비율, JVM 메모리, DB 커넥션 풀 사용량 같은 숫자를 지금은 확인할 방법이 없다. 서버가 느려져도 어디가 원인인지 추측할 수밖에 없다.
@@ -62,12 +62,12 @@ management:
 - 커밋, 브랜치 전환
 
 ## 완료 조건 (검증 가능한 항목)
-- [ ] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 48개 + 신규)
-- [ ] `local` 프로필 기동 후 `curl http://localhost:8081/actuator/prometheus` → 200, `http_server_requests_seconds_bucket`·`hikaricp_connections_active`·`jvm_memory_used_bytes` 지표 포함 (API를 한 번 호출한 뒤 확인)
-- [ ] `curl http://localhost:8081/actuator/health` → `{"status":"UP"}` (상세 정보 미노출)
-- [ ] `curl http://localhost:8080/api/actuator/prometheus` → 공개되지 않음 (403 또는 404)
-- [ ] 기존 API 동작 유지: 인증 없는 `GET /api/calendar/events` → 403, `/api/auth/login` 정상
-- [ ] 수정·추가 파일: `pom.xml`, `application.yml`, `SecurityConfig.java`, `ActuatorEndpointTest.java` (그 밖의 파일이 필요하면 질문/이슈에 남긴다)
+- [x] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 48개 + 신규)
+- [x] `local` 프로필 기동 후 `curl http://localhost:8081/actuator/prometheus` → 200, `http_server_requests_seconds_bucket`·`hikaricp_connections_active`·`jvm_memory_used_bytes` 지표 포함 (API를 한 번 호출한 뒤 확인)
+- [x] `curl http://localhost:8081/actuator/health` → `{"status":"UP"}` (상세 정보 미노출)
+- [x] `curl http://localhost:8080/api/actuator/prometheus` → 공개되지 않음 (403 또는 404)
+- [x] 기존 API 동작 유지: 인증 없는 `GET /api/calendar/events` → 403, `/api/auth/login` 정상
+- [x] 수정·추가 파일: `pom.xml`, `application.yml`, `SecurityConfig.java`, `ActuatorEndpointTest.java` (그 밖의 파일이 필요하면 질문/이슈에 남긴다)
 
 ## 참고 파일
 - `backend/pom.xml`
@@ -78,3 +78,13 @@ management:
 - `backend/src/test/java/com/mynotionai/controller/CalendarControllerTest.java` (테스트 스타일 참고)
 
 ## 질문/이슈 (Codex 작성)
+
+## 검증 기록 (2026-11-16, Claude)
+- 구현 커밋(cherry-pick): `2a73ce9`, `d1d9512`, `f48042d` / 리뷰 문서: `09d0026` (🔴 0, 🟡 3, 🟢 3) / 문서 갱신: `055d58c`, `f920e36`
+- `mvn test` (JDK 17): Tests run 52, Failures 0, Errors 0 (기존 48 + `ActuatorEndpointTest` 4), BUILD SUCCESS
+- `local` 프로필 기동 후 curl
+  - 8081 `/actuator/health` → 200 `{"status":"UP","groups":["liveness","readiness"]}` (probes 활성화로 `groups` 표시, 상세 정보 미노출), liveness·readiness → 200
+  - 8081 `/actuator/prometheus` → 200, `http_server_requests_seconds_bucket`·`hikaricp_connections_active`·`jvm_memory_used_bytes`·`application="mynotion-backend"` 포함
+  - 8081 `/actuator/info`, `/actuator/metrics` → 403
+  - 8080 `/api/actuator/prometheus` → 403
+  - 익명 `GET /api/calendar/events` → 403, 회원가입·`/api/auth/login` → 200, 토큰으로 일정 조회 → 200
