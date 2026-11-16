@@ -1,0 +1,9 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: mynotion-backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # 호스트에 공개하지 않은 관리 포트를 내부 서비스 이름으로 찾는다.
+      - targets: ["app:8081"]
