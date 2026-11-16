@@ -76,7 +76,7 @@
     {
       "id": 4,
       "title": "5xx 에러 비율",
-      "description": "트래픽이 없으면 비율 값이 표시되지 않는다.",
+      "description": "5xx가 없으면 0%, 트래픽이 없으면 빈 값",
       "type": "timeseries",
       "datasource": {"type": "prometheus", "uid": "prometheus"},
       "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
@@ -88,7 +88,7 @@
         {
           "refId": "A",
           "datasource": {"type": "prometheus", "uid": "prometheus"},
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"mynotion-backend\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) / sum(rate(http_server_requests_seconds_count{application=\"mynotion-backend\", uri!~\"/actuator.*\"}[$__rate_interval]))",
+          "expr": "(sum(rate(http_server_requests_seconds_count{application=\"mynotion-backend\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) or vector(0)) / sum(rate(http_server_requests_seconds_count{application=\"mynotion-backend\", uri!~\"/actuator.*\"}[$__rate_interval]))",
           "legendFormat": "5xx 비율",
           "range": true
         }
