@@ -133,7 +133,9 @@ threshold 실패 시 k6는 종료 코드 99를 반환한다. 검증할 때는 �
 - 콘솔: 전체 메트릭 값과 threshold 통과·실패를 표시하는 한국어 텍스트 요약
 - `load-test/results/` 전체는 `load-test/.gitignore`로 제외한다. 같은 `RUN_ID`의 summary는 덮어쓴다.
 
-`handleSummary()`는 k6가 전달한 객체에서 `metrics`, `root_group`, `options`, `state`만 선택하고, setup에서 확정한 `runId`를 메타데이터로 추가해 JSON으로 저장한다. 메트릭 안의 threshold 결과도 유지한다. JWT가 포함된 `setup_data`는 저장하지 않으며, 콘솔 요약에도 토큰·비밀번호를 출력하지 않는다. 별도의 원격 JavaScript 의존성 없이 요약한다. [공식 handleSummary 문서](https://grafana.com/docs/k6/latest/results-output/end-of-test/custom-summary/)에서 반환 경로와 집계 방식을 확인할 수 있다.
+`handleSummary()`는 k6가 전달한 객체에서 `metrics`, `root_group`, `options`, `state`만 선택하고, `runId`와 setup 완료 여부인 `setupCompleted`를 메타데이터로 추가해 JSON으로 저장한다. 메트릭 안의 threshold 결과도 유지한다. JWT가 포함된 `setup_data`는 저장하지 않으며, 콘솔 요약에도 토큰·비밀번호를 출력하지 않는다. 별도의 원격 JavaScript 의존성 없이 요약한다. [공식 handleSummary 문서](https://grafana.com/docs/k6/latest/results-output/end-of-test/custom-summary/)에서 반환 경로와 집계 방식을 확인할 수 있다.
+
+setup 식별자가 없으면 명시한 `RUN_ID`, 그것도 없으면 `setup-failed-<시각 밀리초>`로 summary를 저장하며, `setupCompleted: false`와 콘솔 안내로 setup이 완료되지 않아 측정 결과가 아님을 표시한다(정상 완료 시 `true`).
 
 **summary는 워밍업·유지·감소를 합친 집계다. 유지 구간 전용 p95·RPS로 옮겨 적으면 안 된다.** 결과 문서는 유지 구간만 사용해야 하므로 측정 시 시간별 원본이 필요하면 위 실행 명령의 마지막 줄을 다음과 같이 바꾼다.
 

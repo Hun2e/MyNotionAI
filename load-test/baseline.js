@@ -168,12 +168,14 @@ function metricSummary(name, metric) {
 }
 
 function summaryData(data) {
+  const setupRunId = data.setup_data && data.setup_data.runId;
   return {
     metrics: data.metrics,
     root_group: data.root_group,
     options: data.options,
     state: data.state,
-    runId: data.setup_data.runId,
+    runId: setupRunId || config.runId || `setup-failed-${Date.now()}`,
+    setupCompleted: Boolean(setupRunId),
   };
 }
 
@@ -185,7 +187,9 @@ export function handleSummary(data) {
   return {
     [path]: JSON.stringify(summary, null, JSON_INDENT),
     stdout: [
-      'k6 기준선 요약: 전체 실행 집계이며 유지 구간 전용 수치가 아닙니다.',
+      summary.setupCompleted
+        ? 'k6 기준선 요약: 전체 실행 집계이며 유지 구간 전용 수치가 아닙니다.'
+        : 'setup이 완료되지 않아 측정 결과가 아니다.',
       `목표 VU: read=${scenarioVus.read}, chat_logs=${scenarioVus.chat_logs}, write=${scenarioVus.write}`,
       ...lines,
       `결과: ${path}`,
