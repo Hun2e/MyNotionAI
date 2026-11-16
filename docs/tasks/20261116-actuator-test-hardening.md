@@ -1,6 +1,6 @@
 # Actuator 테스트 보강 (리뷰 🟡 권장 3건 반영)
 - 브랜치: feature/actuator-test-hardening
-- 상태: 대기
+- 상태: 완료
 
 ## 배경 (왜 하는가)
 PR #6(`feature/observability`, Actuator + Prometheus, 관리 포트 8081)은 main에 머지되었다. 코드 리뷰 `docs/reviews/20261116-observability.md`에서 🔴 필수 수정은 없었다. 다만 **테스트가 회귀를 잡지 못한다**는 🟡 권장 3건이 남았다. 검증 기록의 curl 확인은 사람이 한 번 실행한 결과일 뿐이고, 다음 변경에서 다시 깨져도 `mvn test`는 이를 알려 주지 않는다.
@@ -100,16 +100,16 @@ PR #6(`feature/observability`, Actuator + Prometheus, 관리 포트 8081)은 mai
 - push, PR 생성, main 커밋
 
 ## 완료 조건 (검증 가능한 항목)
-- [ ] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 52개 + 신규 4개 이상, Failures 0, Errors 0)
-- [ ] `ActuatorEndpointTest.apiPortDoesNotExposePrometheus`가 `HttpStatus.FORBIDDEN`을 단언한다 (`isNotEqualTo(OK)` 제거)
-- [ ] 같은 테스트 메서드 안에서 API 포트 요청 후 관리 포트 Prometheus 본문에 `http_server_requests_seconds_bucket`, `hikaricp_connections_active`가 있다고 단언한다
-- [ ] 익명 `GET /api/calendar/events` → 403 단언
-- [ ] 회원가입(`POST /api/auth/register`)·로그인(`POST /api/auth/login`) 각각 200과 비어 있지 않은 `accessToken` 단언, 로그인 토큰으로 `GET /api/calendar/events` → 200 단언
-- [ ] `Origin: http://localhost:5173` preflight(`OPTIONS /api/calendar/events`) → 200, `Access-Control-Allow-Origin`·`Access-Control-Allow-Credentials`·`Access-Control-Allow-Methods(GET 포함)` 단언
-- [ ] 새 테스트 클래스는 `ActuatorEndpointTest`와 같은 `@SpringBootTest`(RANDOM_PORT + `management.server.port=0`)·`@ActiveProfiles("test")`·`@AutoConfigureObservability` 설정을 사용한다
-- [ ] 회원가입 이메일이 실행마다 고유하다. 테스트를 단독으로 돌리거나 전체를 반복 실행해도 통과한다 (`mvn test -Dtest=ApiSecurityChainIntegrationTest`, `mvn test -Dtest=ActuatorEndpointTest`)
-- [ ] 매직 넘버 없음(상태 코드는 `HttpStatus`, 문자열·숫자는 상수), 메서드 30줄 이하, 4칸 들여쓰기, 한국어 `@DisplayName`
-- [ ] 수정·추가 파일은 **테스트 파일 2개뿐**이다 (그 밖의 파일이 필요하면 질문/이슈에 남긴다)
+- [x] `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 전체 통과 (기존 52개 + 신규 4개 이상, Failures 0, Errors 0)
+- [x] `ActuatorEndpointTest.apiPortDoesNotExposePrometheus`가 `HttpStatus.FORBIDDEN`을 단언한다 (`isNotEqualTo(OK)` 제거)
+- [x] 같은 테스트 메서드 안에서 API 포트 요청 후 관리 포트 Prometheus 본문에 `http_server_requests_seconds_bucket`, `hikaricp_connections_active`가 있다고 단언한다
+- [x] 익명 `GET /api/calendar/events` → 403 단언
+- [x] 회원가입(`POST /api/auth/register`)·로그인(`POST /api/auth/login`) 각각 200과 비어 있지 않은 `accessToken` 단언, 로그인 토큰으로 `GET /api/calendar/events` → 200 단언
+- [x] `Origin: http://localhost:5173` preflight(`OPTIONS /api/calendar/events`) → 200, `Access-Control-Allow-Origin`·`Access-Control-Allow-Credentials`·`Access-Control-Allow-Methods(GET 포함)` 단언
+- [x] 새 테스트 클래스는 `ActuatorEndpointTest`와 같은 `@SpringBootTest`(RANDOM_PORT + `management.server.port=0`)·`@ActiveProfiles("test")`·`@AutoConfigureObservability` 설정을 사용한다
+- [x] 회원가입 이메일이 실행마다 고유하다. 테스트를 단독으로 돌리거나 전체를 반복 실행해도 통과한다 (`mvn test -Dtest=ApiSecurityChainIntegrationTest`, `mvn test -Dtest=ActuatorEndpointTest`)
+- [x] 매직 넘버 없음(상태 코드는 `HttpStatus`, 문자열·숫자는 상수), 메서드 30줄 이하, 4칸 들여쓰기, 한국어 `@DisplayName`
+- [x] 수정·추가 파일은 **테스트 파일 2개뿐**이다 (그 밖의 파일이 필요하면 질문/이슈에 남긴다)
   - 수정: `backend/src/test/java/com/mynotionai/config/ActuatorEndpointTest.java`
   - 추가: `backend/src/test/java/com/mynotionai/config/ApiSecurityChainIntegrationTest.java`
 
@@ -133,3 +133,15 @@ PR #6(`feature/observability`, Actuator + Prometheus, 관리 포트 8081)은 mai
 3. **컨텍스트 재사용 (추측)**: 두 클래스의 설정이 같으면 TestContext 캐시로 컨텍스트 1개를 공유할 것으로 본다. 테스트 로그에서 Spring Boot 배너·`Started` 로그가 한 번만 찍히는지 확인해 적는다(실패 조건은 아님).
 
 ### 구현자 질문/이슈
+
+## 검증 기록 (2026-11-16, Claude)
+- 커밋(cherry-pick): 구현 `cfe0aa1`, `b87108e` / 리뷰 문서 `6014f12` (🔴 0, 🟡 0, 🟢 3). 커밋 메시지 접두어 없음 확인
+- `mvn test` (JDK 17): 전체 2회 반복 모두 Tests run 56, Failures 0, Errors 0 (기존 52 + 신규 4)
+- 단독 실행: `-Dtest=ApiSecurityChainIntegrationTest` 3/3, `-Dtest=ActuatorEndpointTest` 5/5 통과
+- 회귀 탐지 확인 (임시 worktree에서 일부러 깨뜨린 뒤 되돌림)
+  - `percentiles-histogram.http.server.requests`를 `false`로 변경 → `managementPrometheusExposesHttpAndHikariMetricsAfterApiRequest` 실패
+  - 관리 체인의 `securityMatcher` 제거(관리 체인이 API 요청을 가로챔) → `registeredUserCanLoginAndReadCalendarWithJwt`, `allowedOriginPreflightRetainsCorsHeaders` 실패
+- PM 사전 표시 3건 확인 결과
+  1. `TestRestTemplate` 클라이언트: OkHttp가 선택되어 preflight의 `Origin` 헤더가 정상 전달됨(테스트 통과로 확인)
+  2. test 프로필에서도 `hikaricp_connections_active` 지표 노출됨
+  3. 컨텍스트 재사용: 전체 실행 로그에서 `ApiSecurityChainIntegrationTest`의 `Started` 로그가 없어 `ActuatorEndpointTest` 컨텍스트를 재사용함
