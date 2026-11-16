@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.time.YearMonth;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(
@@ -25,8 +27,12 @@ class ActuatorEndpointTest {
 
     static final String RANDOM_MANAGEMENT_PORT_PROPERTY = "management.server.port=0";
     private static final String LOCALHOST_URL = "http://localhost:";
+    private static final String API_PATH = "/api";
+    private static final String MONTHLY_EVENTS_PATH = "/calendar/events?year=%d&month=%d";
     private static final String HEALTH_PATH = "/actuator/health";
     private static final String PROMETHEUS_PATH = "/actuator/prometheus";
+    private static final String HTTP_REQUEST_HISTOGRAM_METRIC = "http_server_requests_seconds_bucket";
+    private static final String HIKARI_ACTIVE_CONNECTIONS_METRIC = "hikaricp_connections_active";
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -62,12 +68,31 @@ class ActuatorEndpointTest {
     }
 
     @Test
-    @DisplayName("API 포트에서는 Prometheus가 공개되지 않는다")
+    @DisplayName("API 포트의 Prometheus 요청은 403으로 차단된다")
     void apiPortDoesNotExposePrometheus() {
         ResponseEntity<String> response = restTemplate.getForEntity(
-            LOCALHOST_URL + serverPort + "/api" + PROMETHEUS_PATH, String.class);
+            apiUrl(PROMETHEUS_PATH), String.class);
 
-        assertThat(response.getStatusCode()).isNotEqualTo(HttpStatus.OK);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    @DisplayName("API 요청 후 관리 포트의 Prometheus는 HTTP 히스토그램과 Hikari 지표를 반환한다")
+    void managementPrometheusExposesHttpAndHikariMetricsAfterApiRequest() {
+        YearMonth currentMonth = YearMonth.now();
+        String eventsPath = MONTHLY_EVENTS_PATH.formatted(
+            currentMonth.getYear(), currentMonth.getMonthValue());
+        ResponseEntity<String> apiResponse = restTemplate.getForEntity(
+            apiUrl(eventsPath), String.class);
+
+        assertThat(apiResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+
+        ResponseEntity<String> metricsResponse = restTemplate.getForEntity(
+            managementUrl(PROMETHEUS_PATH), String.class);
+
+        assertThat(metricsResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(metricsResponse.getBody()).contains(
+            HTTP_REQUEST_HISTOGRAM_METRIC, HIKARI_ACTIVE_CONNECTIONS_METRIC);
     }
 
     @Test
@@ -83,5 +108,9 @@ class ActuatorEndpointTest {
 
     private String managementUrl(String path) {
         return LOCALHOST_URL + managementPort + path;
+    }
+
+    private String apiUrl(String path) {
+        return LOCALHOST_URL + serverPort + API_PATH + path;
     }
 }
