@@ -22,6 +22,26 @@ server:
   servlet:
     context-path: /api
 
+management:
+  server:
+    # 별도 관리 포트에는 /api가 적용되지 않아 /actuator/prometheus로 접근한다.
+    port: 8081
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus, metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        # 응답 시간의 p95/p99 계산에 사용할 히스토그램을 노출한다.
+        http.server.requests: true
+
 logging:
   level:
     root: INFO

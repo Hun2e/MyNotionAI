@@ -136,6 +136,11 @@ mvn spring-boot:run
 | `test` | `src/test/resources/application-test.yml` | H2 인메모리 (`MODE=MySQL`) |
 
 - Windows는 `backend/run-backend-h2.cmd`로 `local` 프로필을 실행할 수 있습니다.
+- 지표(Actuator)는 **관리 포트 8081**에서 따로 노출합니다. 관리 포트에는 context-path(`/api`)가 적용되지 않습니다.
+  - `http://localhost:8081/actuator/health` (상세 정보 미노출), `/actuator/health/liveness`, `/actuator/health/readiness`
+  - `http://localhost:8081/actuator/prometheus` (Prometheus 형식, `application="mynotion-backend"` 태그)
+  - 관리 포트에서는 `health`·`prometheus`만 허용하고 나머지(`info`, `metrics` 등)는 403으로 막습니다.
+  - API 포트 8080의 `/api/actuator/**`는 공개되지 않습니다(403).
 
 ### DB 스키마 (Flyway)
 
@@ -216,7 +221,7 @@ npm run build
 
 | 단계 | 주제 | 상태 |
 |---|---|---|
-| 1. 기초 체력 | 공통 예외 처리 → 프로필 분리 + Flyway → Controller 테스트 → Swagger | 공통 예외 처리 완료, 프로필 분리 + Flyway 진행중 (`feature/profile-flyway`) |
+| 1. 기초 체력 | 공통 예외 처리 → 프로필 분리 + Flyway → Controller 테스트 → Swagger | 공통 예외 처리·프로필 분리 + Flyway 완료 |
 | 2. 도메인 & 데이터 | 일정 겹침 검사, 반복 일정, Reminder N+1 해결, 페이징 | 대기 |
 | 3. 외부 연동 | AiService 전략 패턴 분리, LLM 연동 + 타임아웃/재시도/폴백 | 대기 |
 | 4. 인증 & 성능 | Refresh Token, Redis 캐싱, 리마인더 중복 방지(ShedLock) | 대기 |

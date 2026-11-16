@@ -330,6 +330,28 @@ cd backend && mvn spring-boot:run
 
 </details>
 
+### 지표 확인 (Actuator · Prometheus)
+
+서버를 실행하면 API 포트(8080)와 별도로 **관리 포트 8081**에서 상태와 지표를 노출합니다. 관리 포트에는 `/api` context-path가 붙지 않습니다.
+
+```bash
+# 헬스 체크 (상세 정보는 노출하지 않음)
+curl http://localhost:8081/actuator/health
+# {"status":"UP","groups":["liveness","readiness"]}
+
+# 컨테이너 헬스체크용 프로브
+curl http://localhost:8081/actuator/health/liveness
+curl http://localhost:8081/actuator/health/readiness
+
+# Prometheus 형식 지표 (요청 응답 시간, DB 커넥션 풀, JVM 메모리 등)
+curl -s http://localhost:8081/actuator/prometheus | grep -E "http_server_requests_seconds_bucket|hikaricp_connections_active|jvm_memory_used_bytes" | head
+```
+
+- 모든 지표에는 `application="mynotion-backend"` 태그가 붙습니다.
+- `http_server_requests_*` 지표는 API를 한 번 이상 호출한 뒤에 나타납니다.
+- 관리 포트에서는 `health`·`prometheus`만 허용하고, `info`·`metrics` 등 나머지 엔드포인트는 403으로 막습니다.
+- API 포트의 `http://localhost:8080/api/actuator/**`는 공개되지 않습니다(403).
+
 ### 프론트엔드
 
 ```bash
