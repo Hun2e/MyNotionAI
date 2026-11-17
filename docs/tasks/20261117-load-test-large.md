@@ -1,6 +1,6 @@
 # 대용량 대화 로그 기준선 측정
 - 브랜치: feature/load-test-large
-- 상태: 대기
+- 상태: 진행중
 - 선행 조건: `feature/load-test` 머지(PR #10) → **충족**. k6 스크립트(`load-test/`)와 첫 기준선(`docs/performance/20261117-baseline.md`)이 main에 있다.
 - 이 작업은 **측정과 기록만** 한다. 코드는 바꾸지 않는다(threshold 기본값 변경은 사용자 확정 후 별도 커밋, 아래 6절).
 
@@ -197,5 +197,17 @@ threshold는 "이 정도면 빠르다"는 목표가 아니라, **기본 데이�
 - threshold 기본값 변경: 확정 후 이 브랜치에서 별도 커밋으로 한다.
 - (측정 후 threshold 확정 내용을 여기에 기록한다.)
 
-## 검증 기록
-- (PM이 완료 조건 검증 후 기록한다.)
+## 검증 기록 (2026-11-17, Claude, threshold 확정 전 중간 기록)
+- 측정 커밋 `af3e70e`, 결과 문서 `docs/performance/20261117-baseline-large.md`(커밋 `4cc75b2`)
+- 단계 A·B·C와 A2(A 재측정) 모두 볼륨 초기화 후 측정, k6 종료 코드 0, `setupCompleted: true`, checks 100%, 측정 구간 잠자기 이벤트 0건
+- 실제 setup 시간: A 6.3초 / B 32.8초 / C 53.5초 / A2 4.3초 (`SETUP_TIMEOUT=15m` 이내, 예상보다 빠름)
+- 핵심 결과(유지 구간 k6 p95, chat-logs): A 7.73ms / A2 10.69ms / B 13.67ms / C 38.43ms. MySQL 1회당 읽은 행 200 / 2,000 / 10,007, 평균 실행 시간 0.451 / 2.744 / 12.078ms
+- 대조군(일정 조회·등록) p95는 단계 간 변화 없음(증가 20% 이내, A·A2 간 흔들림 약 2~3ms)
+- GC·Hikari 지표명을 측정 전 `/actuator/prometheus`에서 확인(PM 사전 표시 해소)
+- `--out json` 크기: A 26.9MB / B 47.7MB / C 140.2MB / A2 26.9MB (PM 사전 표시 해소)
+- 단계 D: C에서 차이가 뚜렷해 추가하지 않음(사용자 결정 조건)
+- `backend/` 변경 없음, `mvn test` (JDK 17) Tests run 56, Failures 0, Errors 0. `load-test/results/`는 git 제외 확인
+- 남은 항목: threshold 사용자 확정 → (확정 시) `load-test/lib/config.js`·`load-test/README.md` 별도 커밋과 기본값 단계 A 짧은 실행 확인
+
+### 측정 중 문제와 처리
+- 단계 A 분석에서 PromQL 중괄호를 Python `str.format`이 자리표시자로 해석해 Prometheus 조회 실패. 다음 단계의 볼륨 초기화로 A의 서버 측 지표는 복구 불가 → 스크립트 수정 후 B·C 정상 수집, A는 A2로 재측정했다.
