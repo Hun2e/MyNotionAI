@@ -96,7 +96,7 @@ caffeinate -i -s docker run --rm -i \
 - 힙 최대값은 GC 시점에 따라 흔들리므로, 단계 비교는 GC 횟수·할당 속도를 우선 본다.
 
 **③ 범위 밖 (기본)**
-- MySQL 쪽 지표(쿼리 실행 시간, 읽은 행 수, 버퍼 풀 적중률). mysqld exporter가 없어 compose 수정이 필요하다. 수정 없이 보는 방법은 질문/이슈에 남긴다.
+- MySQL 버퍼 풀 적중률 등 상시 수집 지표(mysqld exporter가 없어 compose 수정 필요). 쿼리 실행 시간·읽은 행 수는 사용자 결정에 따라 `performance_schema`로 측정 직후 확인한다.
 - 컨테이너별 CPU(`docker stats`)는 **선택**이다. 재면 결과 문서에 적고, 안 재면 "미측정"으로 둔다.
 
 ### 6. threshold 확정 절차
@@ -190,6 +190,11 @@ threshold는 "이 정도면 빠르다"는 목표가 아니라, **기본 데이�
 - **[참고] 포화점 측정**: VU를 늘려 처리 한계를 찾는 측정은 이번 범위 밖이다. 페이징 before/after 비교에 필요하다고 판단되면 별도 지시서로 제안한다.
 
 ### 사용자 결정
+- 2026-11-17: **지시서 승인**(측정 시작은 별도 지시 후). 측정 장소(노트북/데스크톱)는 미정.
+- SQL 직접 시딩: 사용하지 않는다(단계 C까지 `/ai/analyze` 시딩 유지).
+- 단계 D(사용자당 2만 건): 단계 C 결과를 보고 차이가 작을 때만 추가를 결정한다.
+- MySQL 지표: **범위에 포함**한다. compose 수정 없이 측정 직후 읽기 전용으로 `performance_schema.events_statements_summary_by_digest`(`chat_logs` 조회의 평균 실행 시간·`SUM_ROWS_EXAMINED`)와 `EXPLAIN`(`idx_chat_user_created` 사용 여부)을 확인해 결과 문서에 적는다. 단계마다 볼륨을 초기화하므로 통계는 단계별로 분리된다.
+- threshold 기본값 변경: 확정 후 이 브랜치에서 별도 커밋으로 한다.
 - (측정 후 threshold 확정 내용을 여기에 기록한다.)
 
 ## 검증 기록
