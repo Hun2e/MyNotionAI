@@ -1,6 +1,6 @@
 # 대용량 대화 로그 기준선 측정
 - 브랜치: feature/load-test-large
-- 상태: 진행중
+- 상태: 완료
 - 선행 조건: `feature/load-test` 머지(PR #10) → **충족**. k6 스크립트(`load-test/`)와 첫 기준선(`docs/performance/20261117-baseline.md`)이 main에 있다.
 - 이 작업은 **측정과 기록만** 한다. 코드는 바꾸지 않는다(threshold 기본값 변경은 사용자 확정 후 별도 커밋, 아래 6절).
 
@@ -146,17 +146,17 @@ threshold는 "이 정도면 빠르다"는 목표가 아니라, **기본 데이�
 - `AGENTS.md`, 루트 `README.md` 수정(PM이 검증 후 반영)
 
 ## 완료 조건 (검증 가능한 항목)
-- [ ] 단계 A·B·C 각각 볼륨 초기화 후 측정했고, k6 **종료 코드 0**이다
-- [ ] 단계별 summary JSON에 `setupCompleted: true`가 있고, 실제 setup 시간이 `SETUP_TIMEOUT` 안이다
-- [ ] 단계별로 `chat_logs` 검사(`대화 로그 수 일치`, 30건)를 포함한 checks 성공률이 0.99를 넘는다
-- [ ] `docs/performance/YYYYMMDD-baseline-large.md`에 단계별 클라이언트 측·서버 측 결과표가 있고, 모든 수치가 실측값이다
-- [ ] GC·Hikari 사용 시간 지표명을 `/actuator/prometheus`에서 확인했고, 결과 문서의 PromQL이 실제 이름을 쓴다
-- [ ] 대조군(`events_list`, `events_create`)의 단계 A 대비 변화율과 판정을 기록했다
-- [ ] 측정 구간에 **잠자기가 없음**을 확인했다(`pmset -g log | grep -E 'Sleep|Wake'`로 단계별 측정 시각 확인, 결과를 '측정 기록'에 적음)
-- [ ] threshold 후보(산정 방식·값·단계별 통과 여부)를 결과 문서에 적었고, 사용자 확정 내용을 이 지시서 '사용자 결정'에 기록했다
-- [ ] 기본값을 바꾸기로 했다면 `load-test/lib/config.js`·`load-test/README.md` 변경이 별도 커밋이고, 기본값으로 단계 A 조건을 짧게 실행해 threshold가 통과한다(종료 코드 0)
-- [ ] `backend/` 변경 없음(`git diff --stat main -- backend` 결과 없음). 운영 코드 영향이 없지만 확인용으로 `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 1회 실행해 **Tests run 56, Failures 0, Errors 0** 유지
-- [ ] 수정·추가 파일은 결과 문서, 이 지시서(검증 기록), 그리고 (확정 시) `load-test/lib/config.js`·`load-test/README.md`뿐이다. `load-test/results/`는 git에 포함되지 않는다
+- [x] 단계 A·B·C 각각 볼륨 초기화 후 측정했고, k6 **종료 코드 0**이다
+- [x] 단계별 summary JSON에 `setupCompleted: true`가 있고, 실제 setup 시간이 `SETUP_TIMEOUT` 안이다
+- [x] 단계별로 `chat_logs` 검사(`대화 로그 수 일치`, 30건)를 포함한 checks 성공률이 0.99를 넘는다
+- [x] `docs/performance/YYYYMMDD-baseline-large.md`에 단계별 클라이언트 측·서버 측 결과표가 있고, 모든 수치가 실측값이다
+- [x] GC·Hikari 사용 시간 지표명을 `/actuator/prometheus`에서 확인했고, 결과 문서의 PromQL이 실제 이름을 쓴다
+- [x] 대조군(`events_list`, `events_create`)의 단계 A 대비 변화율과 판정을 기록했다
+- [x] 측정 구간에 **잠자기가 없음**을 확인했다(`pmset -g log | grep -E 'Sleep|Wake'`로 단계별 측정 시각 확인, 결과를 '측정 기록'에 적음)
+- [x] threshold 후보(산정 방식·값·단계별 통과 여부)를 결과 문서에 적었고, 사용자 확정 내용을 이 지시서 '사용자 결정'에 기록했다
+- [x] 기본값을 바꾸기로 했다면 `load-test/lib/config.js`·`load-test/README.md` 변경이 별도 커밋이고, 기본값으로 단계 A 조건을 짧게 실행해 threshold가 통과한다(종료 코드 0)
+- [x] `backend/` 변경 없음(`git diff --stat main -- backend` 결과 없음). 운영 코드 영향이 없지만 확인용으로 `cd backend && JAVA_HOME=$(/usr/libexec/java_home -v 17) mvn test` 1회 실행해 **Tests run 56, Failures 0, Errors 0** 유지
+- [x] 수정·추가 파일은 결과 문서, 이 지시서(검증 기록), 그리고 (확정 시) `load-test/lib/config.js`·`load-test/README.md`뿐이다. `load-test/results/`는 git에 포함되지 않는다
 
 ## 참고 파일
 - `docs/performance/20261117-baseline.md` (첫 기준선: 형식, 유지 구간 집계 방식, PromQL, 측정 기록)
@@ -208,7 +208,8 @@ threshold는 "이 정도면 빠르다"는 목표가 아니라, **기본 데이�
 - `--out json` 크기: A 26.9MB / B 47.7MB / C 140.2MB / A2 26.9MB (PM 사전 표시 해소)
 - 단계 D: C에서 차이가 뚜렷해 추가하지 않음(사용자 결정 조건)
 - `backend/` 변경 없음, `mvn test` (JDK 17) Tests run 56, Failures 0, Errors 0. `load-test/results/`는 git 제외 확인
-- 남은 항목: threshold 사용자 확정 → (확정 시) `load-test/lib/config.js`·`load-test/README.md` 별도 커밋과 기본값 단계 A 짧은 실행 확인
+- threshold 확정(안 2): read 50 / chat_logs 30 / write 50ms → 별도 커밋 `4511f20`(`load-test/lib/config.js`·`load-test/README.md`만 변경)
+- 확정 기본값 확인 실행(12:13~12:15 KST, 볼륨 초기화 스택, 기본 데이터=단계 A 조건, 기간만 30s/1m/30s): k6 종료 코드 0, chat_logs p95 6.58ms(<30), events_list 6.02ms(<50), events_create 10.66ms(<50), 실패율 3개 시나리오 0, checks 3,592/3,592
 
 ### 측정 중 문제와 처리
 - 단계 A 분석에서 PromQL 중괄호를 Python `str.format`이 자리표시자로 해석해 Prometheus 조회 실패. 다음 단계의 볼륨 초기화로 A의 서버 측 지표는 복구 불가 → 스크립트 수정 후 B·C 정상 수집, A는 A2로 재측정했다.
