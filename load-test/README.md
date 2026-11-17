@@ -80,10 +80,10 @@ k6 이미지는 **`grafana/k6:0.57.0`**으로 고정한다. `latest`를 사용�
 | `RAMPDOWN` | `1m` | 목표 VU → 0 |
 | `THINK_TIME_SEC` | `1` | 반복마다 대기할 초, 0 이상 |
 | `SETUP_TIMEOUT` | `5m` | 사용자 생성·시딩의 전체 제한 시간 |
-| `P95_READ_MS` | `300` | 일정 조회 p95 임시 상한(ms), 0 초과 |
-| `P95_CHAT_LOGS_MS` | `300` | 대화 로그 조회 p95 임시 상한(ms), 0 초과 |
-| `P95_WRITE_MS` | `500` | 일정 등록 p95 임시 상한(ms), 0 초과 |
-| `MAX_FAIL_RATE` | `0.01` | 각 시나리오 HTTP 실패율 임시 상한, 0 초과~1 이하 |
+| `P95_READ_MS` | `50` | 일정 조회 p95 상한(ms), 0 초과 |
+| `P95_CHAT_LOGS_MS` | `30` | 대화 로그 조회 p95 상한(ms), 0 초과 |
+| `P95_WRITE_MS` | `50` | 일정 등록 p95 상한(ms), 0 초과 |
+| `MAX_FAIL_RATE` | `0.01` | 각 시나리오 HTTP 실패율 상한, 0 초과~1 이하 |
 
 `BASE_URL`·`LOAD_TEST_PASSWORD`가 없으면 init 단계에서 요청 전에 실패한다. 잘못된 숫자·기간, 두 비율의 합이 1 이상인 경우, 조회 월과 쓰기 월의 연·월이 같은 경우도 실패한다. 연도는 1000~9998 정수로 제한한다. 기간은 `30s`, `1m`, `1m30s` 같은 0보다 큰 단위 포함 값이다.
 
@@ -111,19 +111,21 @@ k6 이미지는 **`grafana/k6:0.57.0`**으로 고정한다. `latest`를 사용�
 
 ## Threshold와 결과 해석
 
-**아래 threshold는 근거 있는 성능 목표가 아닌 임시 초기값이다.** 기준선 측정 후 사용자와 확정한다. VU·기간·데이터 양 역시 초기 제안값이다.
+아래 threshold 기본값은 사용자 확정값이다. [대용량 기준선](../docs/performance/20261117-baseline-large.md)의 단계 A·A2 중 큰 p95(read 9.82 / chat_logs 10.69 / write 11.66ms)를 기준으로 read·write의 회귀 감지선을 50ms로 정했다.
+chat_logs는 30ms로 두어 사용자당 로그 10,000건인 단계 C 조건(38.43ms)은 실패하게 했으며, 2단계 페이징의 목표는 **그 조건에서도 chat_logs p95 30ms 통과**다. VU·기간·데이터 양은 초기 제안값이다.
 
-| 대상 | 임시 조건 |
+| 대상 | 확정 조건 |
 |---|---|
 | 각 시나리오 HTTP 실패율 | `rate < MAX_FAIL_RATE` (기본 `< 0.01`) |
-| `events_list` 지연 | `p(95) < P95_READ_MS` (기본 `< 300ms`) |
-| `chat_logs_list` 지연 | `p(95) < P95_CHAT_LOGS_MS` (기본 `< 300ms`) |
-| `events_create` 지연 | `p(95) < P95_WRITE_MS` (기본 `< 500ms`) |
+| `events_list` 지연 | `p(95) < P95_READ_MS` (기본 `< 50ms`) |
+| `chat_logs_list` 지연 | `p(95) < P95_CHAT_LOGS_MS` (기본 `< 30ms`) |
+| `events_create` 지연 | `p(95) < P95_WRITE_MS` (기본 `< 50ms`) |
 | 측정 중 check 성공률 | `rate > 0.99` (`LIMITS.MIN_CHECK_RATE`) |
 
 시딩 요청에는 `setup_register`, `setup_login`, `setup_events_create`, `setup_analyze`라는 별도 이름 태그를 사용한다. 실패율 threshold는 시나리오, 지연 threshold는 측정용 이름 태그로 한정한다. 준비 단계에는 k6 `check()` 대신 실패 시 예외를 사용하므로 시딩 성공이 `checks` 성공률에 섞이지 않는다. 전체 `http_reqs`, `http_req_failed`, `http_req_duration` 집계에는 시딩이 포함되므로 측정용 하위 지표와 구분한다.
 
 threshold 실패 시 k6는 종료 코드 99를 반환한다. 검증할 때는 별도 실행에서 `-e P95_READ_MS=1`처럼 엄격한 임시값을 넣어 실패가 드러나는지 확인한다. 기본값으로 통과했는지 여부도 실측 결과와 함께 남긴다.
+사용자당 로그 10,000건인 대용량 단계 C 조건에서는 chat_logs threshold 실패(종료 코드 99)가 정상적인 '개선 전' 결과다.
 
 `ramping-vus`는 동시 사용자 수를 정하는 **closed model**이다. RPS는 입력값이 아닌 결과값이며 서버 응답이 느려지면 같은 VU에서도 RPS가 감소한다. VU 비율이 요청 수 비율을 보장하지 않는다. k6와 서버가 같은 머신에서 자원을 나눠 쓰므로 절대 성능으로 일반화하지 말고 같은 머신·Docker 할당 자원·데이터·부하 설정에서 전후를 비교한다.
 
