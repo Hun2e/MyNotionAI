@@ -11,6 +11,10 @@
 ![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=flat-square&logo=flyway&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![Vite](https://img.shields.io/badge/Vite_7-646CFF?style=flat-square&logo=vite&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
+![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)
+![Grafana](https://img.shields.io/badge/Grafana-F46800?style=flat-square&logo=grafana&logoColor=white)
+![k6](https://img.shields.io/badge/k6-7D64FF?style=flat-square&logo=k6&logoColor=white)
 
 ## 목차
 
@@ -65,7 +69,8 @@
 | Backend | Java 17, Spring Boot 3.2, Spring Security, Spring Data JPA (Hibernate 6.3), JJWT 0.12 |
 | Database | MySQL 8 (운영), H2 (로컬·테스트), Flyway 마이그레이션 |
 | Frontend | React 19, Vite 7, React Router 7, TanStack Query, Zustand, Axios |
-| Test | JUnit 5, Mockito, `@WebMvcTest`, `@DataJpaTest`, spring-security-test |
+| Test | JUnit 5, Mockito, `@WebMvcTest`, `@DataJpaTest`, spring-security-test, k6 (부하 테스트) |
+| Infra · 관측 | Docker Compose (앱·MySQL·Prometheus·Grafana), Spring Boot Actuator + Micrometer, Prometheus, Grafana |
 | Tool | Maven, npm, Docker (검증용 MySQL), GitHub |
 
 ## 시스템 아키텍처
@@ -240,6 +245,19 @@ Base URL: `http://localhost:8080/api` · `/auth/**` 외에는 `Authorization: Be
   - **MySQL enum 타입 불일치**: Hibernate 6의 `MySQLDialect`는 `@Enumerated(STRING)` 컬럼을 native `ENUM`으로 기대하지만 V1은 `VARCHAR`로 만들었습니다. H2 테스트는 통과했지만 **빈 MySQL에서는 앱 시작이 실패**했습니다. → `@JdbcTypeCode(SqlTypes.VARCHAR)`로 매핑을 명시했습니다.
 - **결과**: Docker `mysql:8.0` 일회용 컨테이너로 **수정 전 실패 재현 → 수정 후 정상 기동**을 확인했습니다. "H2의 MySQL 모드는 MySQL이 아니다"라는 점을 배웠고, 이 규칙을 팀 문서(`AGENTS.md`)에 남겼습니다.
 
+### 4. 관측성: 지표 노출 → 수집·시각화 → 기준선
+
+- **문제**: 요청 수, 응답 시간, 에러 비율, JVM 메모리, DB 커넥션 풀 상태를 확인할 방법이 없었습니다. 2단계에서 대화 로그 페이징이나 Reminder N+1을 고쳐도 "빨라졌다"를 숫자로 보여줄 수 없었습니다.
+- **원인**: 앱이 지표를 내보내지 않았고, 지표를 모아 그래프로 보여줄 도구도, 개선 전후를 비교할 기준값도 없었습니다.
+- **해결**: 세 단계로 나눠 쌓았습니다.
+  - **노출**: Actuator + Micrometer Prometheus registry로 지표를 내보내고, 사용자 API(8080)와 인증 규칙이 섞이지 않도록 **관리 포트 8081**로 분리했습니다. `health`·`prometheus`만 허용합니다.
+  - **수집·시각화**: Docker Compose로 앱(`prod`)·MySQL·Prometheus·Grafana를 한 번에 띄우고, Grafana 대시보드 `MyNotion Overview`(6개 패널)를 자동 등록했습니다. 8081·3306은 호스트에 공개하지 않고, 공개 포트는 `127.0.0.1`에만 바인딩했습니다.
+  - **기준선**: k6로 20 VU(일정 조회 12 / 대화 로그 조회 4 / 일정 등록 4)를 워밍업 1분 → 유지 5분 → 감소 1분으로 걸어 개선 전 수치를 기록했습니다.
+- **결과** (유지 구간 5분, k6 클라이언트 측): 3개 엔드포인트 p95가 약 11ms(`GET /calendar/events` 10.85ms, `GET /ai/chat-logs` 11.49ms, `POST /calendar/events` 11.88ms), 에러율 0%였습니다. 앱 CPU 평균 0.82%, HikariCP 활성 커넥션 최대 1개로, 이 수치는 **저부하 응답 시간**이며 처리 한계는 측정하지 않았습니다. 상세 수치와 PromQL은 [`docs/performance/20261117-baseline.md`](docs/performance/20261117-baseline.md)에 있습니다.
+- **배운 점**
+  - **시계열 부재와 0은 다르다**: 5xx 에러 비율 패널은 5xx 요청이 한 번도 없으면 분자 시계열이 아예 없어 정상 트래픽에서도 값이 비어 보였습니다. 분자에만 `or vector(0)`을 붙여 "트래픽 없음(빈 값)"과 "에러 0"을 구분했습니다.
+  - **측정 환경도 결과의 일부다**: 첫 측정은 도중에 Mac이 잠자기에 들어가 수치를 버렸고, `caffeinate -i -s`로 감싸 다시 측정했습니다.
+
 ## 테스트
 
 ```bash
@@ -285,6 +303,7 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 | 중간 | OpenAI 설정과 라이브러리는 있으나 실제 호출 코드 없음 (규칙 기반만 동작) | 3단계 LLM 연동 |
 | 낮음 | Google 로그인이 `window.prompt`로 ID 토큰을 입력받는 임시 방식 | OAuth 버튼 방식 전환 |
 | 낮음 | CORS origin 하드코딩, `AiService`(257줄)의 책임 과다, CI 없음 | 3·5단계 |
+| 낮음 | 부하 테스트 결과는 k6와 서버가 같은 Mac 한 대에서 측정한 상대 비교용 수치임 | 같은 머신·같은 Docker 설정에서 개선 전후 비교 |
 
 ### 로드맵
 
@@ -294,7 +313,7 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 | 2. 도메인 & 데이터 | 일정 겹침 검사, 반복 일정, Reminder N+1, 페이징 | ⚪ 대기 |
 | 3. 외부 연동 | `ScheduleParser` 전략 패턴(LLM + 규칙 기반 폴백), 타임아웃·재시도 | ⚪ 대기 |
 | 4. 인증 & 성능 | Refresh Token, 401/403 응답 통일, Redis 캐싱, ShedLock | ⚪ 대기 |
-| 5. 운영 | Docker Compose, GitHub Actions CI, Actuator, Testcontainers | ⚪ 대기 |
+| 5. 운영 | Docker Compose, GitHub Actions CI, Actuator, Testcontainers | 🟢 Docker Compose·Actuator 완료(k6 기준선 측정 포함) / GitHub Actions CI·Testcontainers 대기 |
 
 ## 실행 방법
 
@@ -302,6 +321,7 @@ AI 에이전트를 역할별로 나누고, 모든 전달은 **문서**로 남기
 
 - JDK 17, Maven 3.9+
 - Node.js 18+, npm 9+
+- Docker Desktop (Docker Compose로 실행할 때만)
 
 ### 백엔드 (`local` 프로필, 환경 변수 불필요)
 
@@ -329,6 +349,28 @@ cd backend && mvn spring-boot:run
 - 스키마를 바꿀 때는 `db/migration/`에 `V2__설명.sql`처럼 새 파일을 추가합니다. 이미 적용된 파일은 수정하지 않습니다.
 
 </details>
+
+### Docker Compose로 실행하기 (`prod` 스택)
+
+앱(`prod` 프로필)·MySQL·Prometheus·Grafana를 한 번에 띄웁니다. 저장소 루트에서 실행합니다.
+
+```bash
+cp .env.example .env        # 더미 값을 로컬에서 쓸 값으로 바꾼다 (.env는 git 제외)
+docker compose up -d --build
+docker compose ps           # 4개 서비스가 healthy인지 확인
+```
+
+| 서비스 | 접속 주소 |
+|---|---|
+| API | `http://localhost:8080/api` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` (`.env`의 `GRAFANA_ADMIN_USER`·`GRAFANA_ADMIN_PASSWORD`로 로그인) |
+
+- Grafana에는 대시보드 **`MyNotion Overview`** 가 자동 등록됩니다. 6개 패널(요청 처리량 RPS, p95 응답 시간, p99 응답 시간, 5xx 에러 비율, HikariCP 커넥션, JVM 힙 사용량)로 앱 상태를 봅니다.
+- 공개 포트는 모두 `127.0.0.1`에 바인딩해 같은 네트워크의 다른 기기에서 접근하지 못하게 합니다.
+- 관리 포트 8081과 MySQL 3306은 호스트에 공개하지 않습니다. Prometheus는 compose 내부망에서 `app:8081`로 수집하고, DB 확인은 `docker compose exec mysql ...`로 합니다. 그래서 아래 '지표 확인'의 `localhost:8081` 예시는 로컬 실행(`mvn spring-boot:run`)에서만 동작합니다.
+- 종료: `docker compose down`은 볼륨(데이터)을 유지하고, `docker compose down -v`는 MySQL·Prometheus·Grafana 데이터까지 삭제합니다.
+- 모든 서비스는 사용자 정의 네트워크 `mynotion-net`에 붙습니다. k6 부하 테스트 컨테이너도 이 네트워크로 붙어 `http://app:8080/api`를 호출합니다. 실행 방법은 [`load-test/README.md`](load-test/README.md)를 참고합니다.
 
 ### 지표 확인 (Actuator · Prometheus)
 
