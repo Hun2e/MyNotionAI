@@ -108,9 +108,13 @@ MyNotionAI/
 ├── .claude/CLAUDE.md    # AGENTS.md import 전용
 ├── backend/             # Spring Boot 3.2, Java 17, Maven
 ├── frontend/            # React 19, Vite 7
+├── docker-compose.yml   # prod 스택 (앱 · MySQL · Prometheus · Grafana)
+├── monitoring/          # Prometheus 스크레이프 설정, Grafana provisioning·대시보드
+├── load-test/           # k6 부하 테스트 스크립트와 실행 방법 (README.md)
 └── docs/
     ├── tasks/           # 작업 지시서 (Claude)
     ├── reviews/         # 코드 리뷰 (Codex)
+    ├── performance/     # 부하 테스트 실측 결과 (기준선 등)
     └── WireFrame/       # 화면 와이어프레임
 ```
 
@@ -142,6 +146,39 @@ mvn spring-boot:run
   - `http://localhost:8081/actuator/prometheus` (Prometheus 형식, `application="mynotion-backend"` 태그)
   - 관리 포트에서는 `health`·`prometheus`만 허용하고 나머지(`info`, `metrics` 등)는 403으로 막습니다.
   - API 포트 8080의 `/api/actuator/**`는 공개되지 않습니다(403).
+
+### Docker Compose (prod 스택)
+
+앱(`prod` 프로필)·MySQL·Prometheus·Grafana를 한 번에 띄웁니다. 저장소 루트에서 실행합니다.
+
+```bash
+cp .env.example .env        # 더미 값을 로컬에서 쓸 값으로 바꾼다 (.env는 git 제외)
+docker compose up -d --build
+docker compose ps           # 4개 서비스가 healthy인지 확인
+```
+
+| 서비스 | 접속 주소 |
+|---|---|
+| API | `http://localhost:8080/api` |
+| Prometheus | `http://localhost:9090` |
+| Grafana | `http://localhost:3000` (`.env`의 `GRAFANA_ADMIN_USER`·`GRAFANA_ADMIN_PASSWORD`로 로그인) |
+
+- 공개 포트는 모두 `127.0.0.1`에 바인딩해 같은 네트워크의 다른 기기에서 접근하지 못하게 합니다.
+- 관리 포트 8081과 MySQL 3306은 호스트에 공개하지 않습니다. Prometheus는 compose 내부망에서 `app:8081`로 수집하고, DB 확인은 `docker compose exec mysql ...`로 합니다.
+- 종료: `docker compose down`은 볼륨(데이터)을 유지하고, `docker compose down -v`는 MySQL·Prometheus·Grafana 데이터까지 삭제합니다.
+- 모든 서비스는 사용자 정의 네트워크 `mynotion-net`에 붙습니다. 다른 컨테이너(k6 등)는 `--network mynotion-net`으로 붙어 서비스 이름(`app`)으로 접근합니다.
+- `.env`에 `DB_USERNAME`·`DB_PASSWORD`·`JWT_SECRET` 등 필수 값이 없으면 compose가 시작 전에 실패합니다.
+
+### 부하 테스트 (k6)
+
+자세한 방법과 환경 변수는 `load-test/README.md`를 따릅니다. 요약하면 다음 순서입니다.
+
+1. 볼륨 초기화: `docker compose down -v` (전용 측정 스택에서만. MySQL·Prometheus·Grafana 데이터가 모두 삭제됩니다)
+2. 스택 기동: `docker compose up -d --build` → `app`이 `healthy`가 될 때까지 대기
+3. k6 실행: `grafana/k6:0.57.0` 이미지(`latest` 금지)를 `--network mynotion-net`, `BASE_URL=http://app:8080/api`로 실행
+
+- 측정 중 Mac이 잠자기에 들어가면 결과가 오염됩니다. `caffeinate -i -s`로 감싸 실행하고, 덮개를 열고 전원을 연결해 둡니다.
+- 결과는 `docs/performance/`에 **실측값만** 기록합니다. 측정하지 않은 값은 "미측정"으로 둡니다. k6 summary는 워밍업·감소를 포함한 집계이므로 유지 구간 수치와 섞지 않습니다.
 
 ### DB 스키마 (Flyway)
 
@@ -226,7 +263,7 @@ npm run build
 | 2. 도메인 & 데이터 | 일정 겹침 검사, 반복 일정, Reminder N+1 해결, 페이징 | 대기 |
 | 3. 외부 연동 | AiService 전략 패턴 분리, LLM 연동 + 타임아웃/재시도/폴백 | 대기 |
 | 4. 인증 & 성능 | Refresh Token, Redis 캐싱, 리마인더 중복 방지(ShedLock) | 대기 |
-| 5. 운영 | Docker Compose, GitHub Actions CI, Actuator | 대기 |
+| 5. 운영 | Docker Compose, GitHub Actions CI, Actuator | Docker Compose·Actuator 완료(k6 기준선 측정 포함), GitHub Actions CI 대기 |
 
 각 단계 완료 시 **"문제 → 원인 → 해결 → 결과 수치"**를 README 또는 docs에 기록합니다.
 
