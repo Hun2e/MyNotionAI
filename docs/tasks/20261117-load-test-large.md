@@ -195,7 +195,8 @@ threshold는 "이 정도면 빠르다"는 목표가 아니라, **기본 데이�
 - 단계 D(사용자당 2만 건): 단계 C 결과를 보고 차이가 작을 때만 추가를 결정한다.
 - MySQL 지표: **범위에 포함**한다. compose 수정 없이 측정 직후 읽기 전용으로 `performance_schema.events_statements_summary_by_digest`(`chat_logs` 조회의 평균 실행 시간·`SUM_ROWS_EXAMINED`)와 `EXPLAIN`(`idx_chat_user_created` 사용 여부)을 확인해 결과 문서에 적는다. 단계마다 볼륨을 초기화하므로 통계는 단계별로 분리된다.
 - threshold 기본값 변경: 확정 후 이 브랜치에서 별도 커밋으로 한다.
-- (측정 후 threshold 확정 내용을 여기에 기록한다.)
+- 2026-11-17: **threshold 안 2 확정** — `P95_READ_MS` 50, `P95_CHAT_LOGS_MS` **30**, `P95_WRITE_MS` 50 (ms). `MAX_FAIL_RATE` 0.01, checks 0.99는 유지. 근거: 기준 p95 max(A, A2) = read 9.82 / chat_logs 10.69 / write 11.66ms. read·write는 K=3~4를 50ms 단위로 올림, chat_logs는 기준의 약 2.8배인 30ms로 두어 기본 데이터는 통과하고 단계 C 조건(38.43ms)은 실패하게 했다. 2단계 페이징 after의 목표: **단계 C 조건에서도 chat_logs p95 30ms 통과**.
+- 기본값 변경은 이 브랜치의 별도 커밋으로 한다(`load-test/lib/config.js`의 `DEFAULTS.P95_*`, `load-test/README.md`의 threshold 표·"임시값" 문구).
 
 ## 검증 기록 (2026-11-17, Claude, threshold 확정 전 중간 기록)
 - 측정 커밋 `af3e70e`, 결과 문서 `docs/performance/20261117-baseline-large.md`(커밋 `4cc75b2`)
