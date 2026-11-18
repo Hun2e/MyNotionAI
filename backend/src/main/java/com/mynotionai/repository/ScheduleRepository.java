@@ -23,10 +23,6 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
         @Param("to") LocalDateTime to
     );
     
-    List<Schedule> findByUserIdAndStartAtBetween(
-        Long userId, LocalDateTime startAt, LocalDateTime endAt
-    );
-    
     List<Schedule> findByUserIdOrderByStartAtAsc(Long userId);
 
     Optional<Schedule> findByIdAndUserId(Long id, Long userId);
