@@ -28,3 +28,7 @@ backend/data/
 
 # 로컬 Maven 배포본 (Maven Wrapper 사용)
 .tools/
+
+# 개인 에디터 설정
+.vscode/
+*.code-workspace
