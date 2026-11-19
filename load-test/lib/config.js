@@ -14,9 +14,9 @@ export const DEFAULTS = Object.freeze({
   HOLD: '5m',
   RAMPDOWN: '1m',
   THINK_TIME_SEC: 1,
-  P95_READ_MS: 300,
-  P95_CHAT_LOGS_MS: 300,
-  P95_WRITE_MS: 500,
+  P95_READ_MS: 50,
+  P95_CHAT_LOGS_MS: 30,
+  P95_WRITE_MS: 50,
   MAX_FAIL_RATE: 0.01,
   SETUP_TIMEOUT: '5m',
 });
